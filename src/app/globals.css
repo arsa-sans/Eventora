@@ -33,25 +33,29 @@
 
 @theme inline {
   /* Colors */
-  --color-background:     var(--background);
-  --color-surface:        var(--surface);
-  --color-foreground:     var(--foreground);
-  --color-muted:          var(--muted);
-  --color-border:         var(--border);
-  --color-border-hover:   var(--border-hover);
+  --color-background:        var(--background);
+  --color-surface:           var(--surface);
+  --color-foreground:        var(--foreground);
+  --color-muted:             var(--muted);
+  --color-border:            var(--border);
+  --color-border-hover:      var(--border-hover);
+  --color-text-secondary:    #64748B;
 
-  --color-primary:        var(--primary);
-  --color-primary-dark:   var(--primary-dark);
-  --color-primary-light:  var(--primary-light);
-  --color-primary-50:     var(--primary-50);
+  --color-primary:           var(--primary);
+  --color-primary-dark:      var(--primary-dark);
+  --color-primary-light:     var(--primary-light);
+  --color-primary-50:        var(--primary-50);
 
-  --color-accent-rose:    var(--accent-rose);
-  --color-accent-amber:   var(--accent-amber);
-  --color-accent-blue:    var(--accent-blue);
+  --color-accent-rose:       var(--accent-rose);
+  --color-accent-amber:      var(--accent-amber);
+  --color-accent-blue:       var(--accent-blue);
 
   /* Fonts */
   --font-sans:   var(--font-inter), system-ui, sans-serif;
   --font-serif:  var(--font-playfair), Georgia, serif;
+
+  /* Custom breakpoints */
+  --breakpoint-xs: 480px;
 }
 
 /* ============ BASE RESET ============ */
@@ -124,6 +128,16 @@ body {
   scrollbar-width: none;
 }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
+
+/* Safe area padding for mobile bottom nav */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Bottom nav safe area */
+.mobile-nav {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
 
 /* Glassmorphism */
 .glass {

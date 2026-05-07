@@ -255,15 +255,15 @@ export default function EditInvitationPage({ params }: { params: Promise<{ id: s
   return (
     <div className="max-w-3xl mx-auto pb-12">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-6 md:mb-8">
         <button
           onClick={() => router.push("/dashboard/invitations")}
           className="flex items-center gap-1.5 text-sm text-muted hover:text-primary transition-colors mb-4"
         >
           <ArrowLeft className="w-4 h-4" /> Kembali ke Undangan Saya
         </button>
-        <h2 className="text-3xl font-serif text-foreground">Edit Undangan</h2>
-        <p className="text-text-secondary mt-1">
+        <h2 className="text-2xl md:text-3xl font-serif text-foreground">Edit Undangan</h2>
+        <p className="text-text-secondary mt-1 text-sm md:text-base">
           Perbarui detail undanganmu. Perubahan akan langsung diterapkan.
         </p>
       </div>
@@ -307,7 +307,7 @@ export default function EditInvitationPage({ params }: { params: Promise<{ id: s
         </div>
       )}
 
-      <div className="bg-white p-8 rounded-2xl border border-border shadow-sm">
+      <div className="bg-white p-4 md:p-8 rounded-2xl border border-border shadow-sm">
         {/* ═══ STEP 1: COUPLE ═══ */}
         {step === 1 && (
           <div className="space-y-5">
@@ -456,7 +456,7 @@ export default function EditInvitationPage({ params }: { params: Promise<{ id: s
                     <button onClick={() => removeBank(i)} className="absolute top-2 right-2 text-muted hover:text-red-500">
                       <Trash2 className="w-4 h-4" />
                     </button>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <input type="text" className={inputClass} placeholder="Nama Bank" value={acc.bank} onChange={(e) => updateBank(i, "bank", e.target.value)} />
                       <input type="text" className={inputClass} placeholder="No. Rekening" value={acc.number} onChange={(e) => updateBank(i, "number", e.target.value)} />
                       <input type="text" className={inputClass} placeholder="Atas Nama" value={acc.name} onChange={(e) => updateBank(i, "name", e.target.value)} />
@@ -509,18 +509,22 @@ export default function EditInvitationPage({ params }: { params: Promise<{ id: s
         )}
 
         {/* ═══ NAVIGATION ═══ */}
-        <div className="pt-6 flex justify-between border-t border-border mt-6">
+        <div className="pt-6 border-t border-border mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* Back button */}
           {step > 1 ? (
-            <Button variant="outline" onClick={() => setStep(step - 1)}>
+            <Button variant="outline" className="w-full sm:w-auto" onClick={() => setStep(step - 1)}>
               <ArrowLeft className="w-4 h-4" /> Kembali
             </Button>
           ) : (
             <div />
           )}
-          <div className="flex items-center gap-3">
+
+          {/* Right-side buttons */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             {/* Save button always visible */}
             <Button
               variant="secondary"
+              className="w-full sm:w-auto"
               onClick={handleSubmit}
               disabled={saving || !groomName || !brideName}
             >
@@ -531,11 +535,11 @@ export default function EditInvitationPage({ params }: { params: Promise<{ id: s
               )}
             </Button>
             {step < 5 ? (
-              <Button onClick={() => setStep(step + 1)}>
+              <Button className="w-full sm:w-auto" onClick={() => setStep(step + 1)}>
                 Selanjutnya <ArrowRight className="w-4 h-4" />
               </Button>
             ) : (
-              <Button onClick={handleSubmit} disabled={saving || !groomName || !brideName}>
+              <Button className="w-full sm:w-auto" onClick={handleSubmit} disabled={saving || !groomName || !brideName}>
                 {saving ? (
                   <><Loader2 className="w-4 h-4 animate-spin" /> Menyimpan...</>
                 ) : (

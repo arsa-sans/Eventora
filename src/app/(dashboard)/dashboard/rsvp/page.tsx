@@ -81,8 +81,8 @@ export default function RSVPPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-serif text-foreground">Data RSVP</h2>
-        <p className="text-text-secondary mt-1">Lihat respons kehadiran tamu undangan Anda.</p>
+        <h2 className="text-2xl md:text-3xl font-serif text-foreground">Data RSVP</h2>
+        <p className="text-text-secondary mt-1 text-sm md:text-base">Lihat respons kehadiran tamu undangan Anda.</p>
       </div>
 
       {invitations.length === 0 ? (

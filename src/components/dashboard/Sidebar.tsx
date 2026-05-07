@@ -20,7 +20,6 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Undangan Saya', href: '/dashboard/invitations', icon: Mail },
     { name: 'Data RSVP', href: '/dashboard/rsvp', icon: Users },
-    { name: 'Pengaturan', href: '/dashboard/settings', icon: Settings },
   ];
 
   async function handleLogout() {
@@ -65,7 +64,10 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
           {links.map((link) => {
             const Icon = link.icon;
-            const isActive = pathname === link.href || pathname.startsWith(link.href + '/');
+          const isActive =
+            link.href === "/dashboard"
+              ? pathname === "/dashboard"
+              : pathname === link.href || pathname.startsWith(link.href + "/");
             return (
               <Link
                 key={link.name}
