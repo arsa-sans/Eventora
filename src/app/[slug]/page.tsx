@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getTheme } from "@/lib/themeRegistry";
 import { createClient } from "@supabase/supabase-js";
 import type { InvitationData } from "@/types/invitation";
+import { resolveMapUrl } from "@/lib/mapServer";
 
 // Use service role key to bypass RLS (server-side only) so we can view both draft & active invitations
 const supabase = createClient(
@@ -95,8 +96,13 @@ export default async function InvitationPage({ params, searchParams }: Props) {
   if (!theme) notFound();
 
   // Inject guest name into data
+  const resolvedMapUrl = invitation.event_map_url
+    ? await resolveMapUrl(invitation.event_map_url)
+    : undefined;
+
   const dataWithGuest: InvitationData = {
     ...invitation,
+    ...(resolvedMapUrl && { event_map_url: resolvedMapUrl }),
     ...(kepada && { guest_name: decodeURIComponent(kepada) } as any),
   };
 

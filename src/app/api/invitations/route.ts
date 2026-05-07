@@ -1,5 +1,6 @@
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
+import { resolveMapUrl } from "@/lib/mapServer";
 
 // GET: Fetch user's invitations
 export async function GET() {
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
       event_date: body.event_date || null,
       event_time: body.event_time || null,
       event_location: body.event_location || null,
-      event_map_url: body.event_map_url || null,
+      event_map_url: body.event_map_url ? await resolveMapUrl(body.event_map_url) : null,
       message: body.message || null,
       love_story: body.love_story || [],
       gallery_images: body.gallery_images || [],
@@ -109,6 +110,11 @@ export async function PUT(request: NextRequest) {
 
     if (!id) {
       return NextResponse.json({ error: "Invitation ID is required" }, { status: 400 });
+    }
+
+    // Resolve short Google Maps URLs to full URLs with coordinates
+    if (updateData.event_map_url) {
+      updateData.event_map_url = await resolveMapUrl(updateData.event_map_url);
     }
 
     // Add updated_at timestamp

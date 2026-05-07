@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MapPin, Calendar, Music, ChevronDown, Copy, Check, Leaf, Heart, Mail } from "lucide-react";
 import type { InvitationData } from "@/types/invitation";
+import { toEmbedMapUrl } from "@/lib/mapUtils";
 
 interface Props {
   data: InvitationData;
@@ -457,7 +458,7 @@ export function EmeraldGarden({ data }: Props) {
           </p>
           <div className="max-w-md mx-auto rounded-2xl overflow-hidden border" style={{ borderColor: "#A7F3D0" }}>
             <iframe
-              src={event_map_url}
+              src={toEmbedMapUrl(event_map_url)}
               width="100%" height="280"
               style={{ border: 0 }} loading="lazy"
               allowFullScreen referrerPolicy="no-referrer-when-downgrade"

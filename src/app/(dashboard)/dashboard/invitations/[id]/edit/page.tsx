@@ -366,7 +366,7 @@ export default function EditInvitationPage({ params }: { params: Promise<{ id: s
             <div>
               <label className={labelClass}>Google Maps Embed URL (opsional)</label>
               <input type="url" className={inputClass} placeholder="https://www.google.com/maps/embed?pb=..." value={eventMapUrl} onChange={(e) => setEventMapUrl(e.target.value)} />
-              <p className="text-[11px] text-muted mt-1">Buka Google Maps → Share → Embed a map → Copy src URL</p>
+              <p className="text-[11px] text-muted mt-1">Salin link lokasi dari Google Maps (format apapun didukung).</p>
             </div>
           </div>
         )}

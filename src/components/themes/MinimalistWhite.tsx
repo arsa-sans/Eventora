@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { MapPin, Calendar, Copy, Check, ChevronDown, Minus } from "lucide-react";
 import type { InvitationData } from "@/types/invitation";
+import { toEmbedMapUrl } from "@/lib/mapUtils";
 
 interface Props { data: InvitationData; }
 
@@ -300,7 +301,7 @@ export function MinimalistWhite({ data }: Props) {
         <section className="py-16 px-4 text-center border-b border-border">
           <p className="text-[10px] tracking-[0.5em] uppercase text-muted mb-6">Lokasi Acara</p>
           <div className="max-w-md mx-auto overflow-hidden border border-border">
-            <iframe src={event_map_url} width="100%" height="280" style={{ border: 0 }} loading="lazy" allowFullScreen referrerPolicy="no-referrer-when-downgrade" title="Lokasi Acara" />
+            <iframe src={toEmbedMapUrl(event_map_url)} width="100%" height="280" style={{ border: 0 }} loading="lazy" allowFullScreen referrerPolicy="no-referrer-when-downgrade" title="Lokasi Acara" />
           </div>
         </section>
       )}

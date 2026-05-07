@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { MapPin, Calendar, Copy, Check, ChevronDown, Star } from "lucide-react";
 import type { InvitationData } from "@/types/invitation";
+import { toEmbedMapUrl } from "@/lib/mapUtils";
 
 interface Props { data: InvitationData; }
 
@@ -321,7 +322,7 @@ export function MidnightNoir({ data }: Props) {
         <section className="py-16 px-4 text-center" style={{ background: "#0A0A0A" }}>
           <p className="text-xs tracking-[0.3em] uppercase font-semibold mb-6" style={{ color: "#D4AF37" }}>Lokasi Acara</p>
           <div className="max-w-md mx-auto rounded-2xl overflow-hidden border" style={{ borderColor: "#D4AF37" }}>
-            <iframe src={event_map_url} width="100%" height="280" style={{ border: 0 }} loading="lazy" allowFullScreen referrerPolicy="no-referrer-when-downgrade" title="Lokasi Acara" />
+            <iframe src={toEmbedMapUrl(event_map_url)} width="100%" height="280" style={{ border: 0 }} loading="lazy" allowFullScreen referrerPolicy="no-referrer-when-downgrade" title="Lokasi Acara" />
           </div>
         </section>
       )}
