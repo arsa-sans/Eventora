@@ -1,0 +1,146 @@
+@import "tailwindcss";
+
+/* ============================================
+   EVENTORA — DESIGN SYSTEM (Emerald & Teal)
+   ============================================ */
+
+:root {
+  /* Primary — Emerald */
+  --primary:        #059669;
+  --primary-dark:   #047857;
+  --primary-light:  #D1FAE5;
+  --primary-50:     #ECFDF5;
+
+  /* Accent */
+  --accent-rose:    #F43F5E;
+  --accent-amber:   #F59E0B;
+  --accent-blue:    #3B82F6;
+
+  /* Neutral */
+  --background:     #FAFAF8;
+  --surface:        #FFFFFF;
+  --foreground:     #1E293B;
+  --muted:          #64748B;
+  --border:         #E2E8F0;
+  --border-hover:   #CBD5E1;
+
+  /* Gradients */
+  --gradient-hero:     linear-gradient(135deg, #ECFDF5 0%, #FAFAF8 50%, #FFF1F2 100%);
+  --gradient-cta:      linear-gradient(135deg, #059669 0%, #047857 100%);
+  --gradient-footer:   linear-gradient(180deg, #064E3B 0%, #022C22 100%);
+  --gradient-shine:    linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 50%);
+}
+
+@theme inline {
+  /* Colors */
+  --color-background:     var(--background);
+  --color-surface:        var(--surface);
+  --color-foreground:     var(--foreground);
+  --color-muted:          var(--muted);
+  --color-border:         var(--border);
+  --color-border-hover:   var(--border-hover);
+
+  --color-primary:        var(--primary);
+  --color-primary-dark:   var(--primary-dark);
+  --color-primary-light:  var(--primary-light);
+  --color-primary-50:     var(--primary-50);
+
+  --color-accent-rose:    var(--accent-rose);
+  --color-accent-amber:   var(--accent-amber);
+  --color-accent-blue:    var(--accent-blue);
+
+  /* Fonts */
+  --font-sans:   var(--font-inter), system-ui, sans-serif;
+  --font-serif:  var(--font-playfair), Georgia, serif;
+}
+
+/* ============ BASE RESET ============ */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============ SCROLLBAR ============ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* ============ FOCUS RING ============ */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* ============ KEYFRAMES ============ */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-16px); }
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50%       { transform: translateY(-10px) rotate(3deg); }
+}
+
+@keyframes marquee {
+  0%   { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes pulse-ring {
+  0%   { transform: scale(1); opacity: 0.4; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+/* ============ UTILITIES ============ */
+.animate-float       { animation: float 4s ease-in-out infinite; }
+.animate-float-slow  { animation: float-slow 6s ease-in-out infinite; }
+.animate-marquee     { animation: marquee 30s linear infinite; }
+
+.gradient-hero   { background: var(--gradient-hero); }
+.gradient-cta    { background: var(--gradient-cta); }
+.gradient-footer { background: var(--gradient-footer); }
+
+/* Hide scrollbar for carousel */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+
+/* Glassmorphism */
+.glass {
+  background: rgba(250, 250, 248, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Section pattern */
+.section-base {
+  padding-top: 4rem;
+  padding-bottom: 4rem;
+}
+
+@media (min-width: 768px) {
+  .section-base {
+    padding-top: 6rem;
+    padding-bottom: 6rem;
+  }
+}

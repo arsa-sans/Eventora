@@ -1,0 +1,411 @@
+# Eventora — Design System Specification
+
+Panduan visual lengkap untuk seluruh komponen dan halaman Eventora.
+
+---
+
+## 1. Color Palette
+
+### Primary Colors
+| Token | Hex | RGB | Usage |
+|-------|-----|-----|-------|
+| `--primary` | `#059669` | 5,150,105 | Tombol utama, link, CTA, icon aktif |
+| `--primary-dark` | `#047857` | 4,120,87 | Hover tombol, navbar aktif |
+| `--primary-light` | `#D1FAE5` | 209,250,229 | Badge background, highlight row |
+| `--primary-50` | `#ECFDF5` | 236,253,245 | Section background alternatif |
+
+### Accent Colors
+| Token | Hex | Usage |
+|-------|-----|-------|
+| `--accent-rose` | `#F43F5E` | Badge "Popular", harga diskon, notifikasi |
+| `--accent-amber` | `#F59E0B` | Bintang rating, warning |
+| `--accent-blue` | `#3B82F6` | Link info, badge "Baru" |
+
+### Neutral Colors
+| Token | Hex | Usage |
+|-------|-----|-------|
+| `--bg` | `#FAFAF8` | Background utama halaman |
+| `--surface` | `#FFFFFF` | Card, modal, dropdown |
+| `--foreground` | `#1E293B` | Teks utama (heading, body) |
+| `--muted` | `#64748B` | Teks sekunder, placeholder |
+| `--border` | `#E2E8F0` | Border card, divider, input |
+| `--border-hover` | `#CBD5E1` | Border hover state |
+
+### Gradient Presets
+```css
+--gradient-hero: linear-gradient(135deg, #ECFDF5 0%, #FAFAF8 50%, #FFF1F2 100%);
+--gradient-cta: linear-gradient(135deg, #059669 0%, #047857 100%);
+--gradient-footer: linear-gradient(180deg, #064E3B 0%, #022C22 100%);
+--gradient-card-shine: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 50%);
+```
+
+---
+
+## 2. Typography
+
+### Font Stack
+| Role | Font Family | Fallback | CSS Variable |
+|------|------------|----------|-------------|
+| Display/Heading | Playfair Display | Georgia, serif | `--font-serif` |
+| Body/UI | Inter | system-ui, sans-serif | `--font-sans` |
+
+### Type Scale
+| Element | Size Desktop | Size Mobile | Weight | Line Height | Font |
+|---------|-------------|-------------|--------|-------------|------|
+| H1 Hero | 72px (4.5rem) | 40px (2.5rem) | 700 | 1.1 | Serif |
+| H2 Section Title | 40px (2.5rem) | 28px (1.75rem) | 700 | 1.2 | Serif |
+| H3 Card Title | 24px (1.5rem) | 20px (1.25rem) | 600 | 1.3 | Sans |
+| H4 Subsection | 20px (1.25rem) | 18px (1.125rem) | 600 | 1.4 | Sans |
+| Body Large | 18px (1.125rem) | 16px (1rem) | 400 | 1.7 | Sans |
+| Body | 16px (1rem) | 15px | 400 | 1.6 | Sans |
+| Small/Caption | 14px (0.875rem) | 13px | 400 | 1.5 | Sans |
+| Badge/Label | 12px (0.75rem) | 12px | 600 | 1.4 | Sans |
+
+### Text Colors
+- Heading: `--foreground` (#1E293B)
+- Body: `--foreground` (#1E293B) at 90% opacity
+- Muted: `--muted` (#64748B)
+- Link: `--primary` (#059669)
+- On Primary BG: `#FFFFFF`
+
+---
+
+## 3. Spacing & Layout
+
+### Spacing Scale (rem)
+```
+4px  = 0.25rem  → gap antar icon kecil
+8px  = 0.5rem   → padding badge, gap antar item kecil
+12px = 0.75rem  → padding tombol kecil
+16px = 1rem     → padding card, gap grid
+24px = 1.5rem   → margin antar elemen
+32px = 2rem     → section padding horizontal
+48px = 3rem     → gap section mobile
+64px = 4rem     → gap antar section
+96px = 6rem     → section padding vertical desktop
+```
+
+### Container
+- Max width: `1280px` (80rem)
+- Padding horizontal: `16px` mobile, `24px` tablet, `32px` desktop
+
+### Grid
+- Template gallery: `3 kolom` desktop, `2 kolom` tablet, `1 kolom` mobile
+- Feature grid: `3 kolom` desktop, `2 kolom` tablet, `1 kolom` mobile
+- Pricing cards: `3 kolom` (scroll horizontal mobile)
+
+### Breakpoints
+| Name | Min Width | Tailwind |
+|------|-----------|----------|
+| Mobile | 0px | default |
+| Tablet | 768px | `md:` |
+| Desktop | 1024px | `lg:` |
+| Wide | 1280px | `xl:` |
+
+---
+
+## 4. Components
+
+### Buttons
+
+**Primary Button**
+```
+Background: --gradient-cta
+Text: white, 16px, font-weight 600
+Padding: 12px 32px
+Border-radius: 9999px (full rounded)
+Shadow: 0 4px 14px rgba(5,150,105,0.3)
+Hover: scale(1.02), shadow lebih besar
+Active: scale(0.98)
+Transition: all 200ms ease
+```
+
+**Outline Button**
+```
+Background: transparent
+Border: 1.5px solid --primary
+Text: --primary, 16px, font-weight 600
+Padding: 12px 32px
+Border-radius: 9999px
+Hover: bg --primary-50, border --primary-dark
+```
+
+**Ghost Button**
+```
+Background: transparent
+Text: --muted, 16px, font-weight 500
+Padding: 8px 16px
+Hover: bg --primary-50, text --primary
+```
+
+### Cards
+
+**Template Card**
+```
+Background: white
+Border: 1px solid --border
+Border-radius: 16px
+Shadow: 0 1px 3px rgba(0,0,0,0.04)
+Hover: shadow 0 8px 30px rgba(0,0,0,0.08), translateY(-4px)
+Transition: all 300ms ease
+Overflow: hidden (untuk thumbnail)
+
+Structure:
+┌─────────────────────┐
+│  [Thumbnail 16:10]  │
+│  aspect-ratio       │
+├─────────────────────┤
+│  Category Badge     │
+│  Template Name      │
+│  Price              │
+│  [Preview] [Pakai]  │
+└─────────────────────┘
+```
+
+**Pricing Card**
+```
+Default: bg white, border --border, radius 24px, padding 32px
+Popular: border 2px --primary, shadow 0 8px 30px rgba(5,150,105,0.15)
+Popular Badge: bg --accent-rose, text white, -8px top offset
+Header: gradient --gradient-cta untuk plan popular
+```
+
+**Feature Card**
+```
+Background: --bg atau white alternating
+Border: 1px solid --border
+Border-radius: 16px
+Padding: 24px
+Icon container: 48x48px, bg --primary-light, radius 12px
+```
+
+### Inputs
+```
+Height: 48px
+Background: white
+Border: 1px solid --border
+Border-radius: 12px
+Padding: 0 16px
+Font: 16px, --font-sans
+Focus: border --primary, ring 3px --primary-light
+Placeholder: --muted
+```
+
+### Badges
+```
+Padding: 4px 12px
+Border-radius: 9999px
+Font: 12px, weight 600, uppercase, letter-spacing 0.05em
+
+Variants:
+- Default: bg --primary-light, text --primary-dark
+- Popular: bg --accent-rose, text white
+- New: bg --accent-blue, text white
+- Free: bg --primary-50, text --primary
+```
+
+### Navbar
+```
+Position: fixed, top 0, z-50
+Background: rgba(250,250,248,0.8)
+Backdrop-filter: blur(12px)
+Border-bottom: 1px solid --border
+Height: 64px
+Logo: Playfair Display, 24px, bold, --primary
+```
+
+---
+
+## 5. Animations (Framer Motion)
+
+### Page Load
+```tsx
+// Hero text fade-in dari bawah
+initial={{ opacity: 0, y: 30 }}
+animate={{ opacity: 1, y: 0 }}
+transition={{ duration: 0.8, ease: "easeOut" }}
+```
+
+### Scroll Reveal (semua section)
+```tsx
+initial={{ opacity: 0, y: 40 }}
+whileInView={{ opacity: 1, y: 0 }}
+viewport={{ once: true, margin: "-100px" }}
+transition={{ duration: 0.6, delay: index * 0.1 }}
+```
+
+### Card Hover
+```tsx
+whileHover={{ y: -4, scale: 1.01 }}
+transition={{ type: "spring", stiffness: 300, damping: 20 }}
+```
+
+### Stats Counter
+```tsx
+// Animate dari 0 ke target number
+// Duration: 2 detik
+// Easing: easeOut
+// Trigger: whileInView
+```
+
+### FAQ Accordion
+```tsx
+// AnimatePresence untuk expand/collapse
+initial={{ height: 0, opacity: 0 }}
+animate={{ height: "auto", opacity: 1 }}
+exit={{ height: 0, opacity: 0 }}
+transition={{ duration: 0.3, ease: "easeInOut" }}
+```
+
+### Floating Elements (Hero)
+```tsx
+// Parallax cards
+animate={{ y: [0, -15, 0] }}
+transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+```
+
+---
+
+## 6. Landing Page Section Specs
+
+### 6.1 Hero
+- Background: `--gradient-hero` mesh gradient
+- Floating decorative blobs: emerald & rose, blur 80px, opacity 0.1
+- Center aligned text content
+- Event type pills below heading (horizontal scroll mobile)
+- Below CTA: mockup frame showing invitation preview
+
+### 6.2 Template Showcase
+- Background: `--bg`
+- Section title + subtitle centered
+- 4-column grid desktop, 2 mobile
+- Show 8 templates, "Lihat Semua" button below
+- Each card has thumbnail, name, price, category badge
+
+### 6.3 Stats Counter
+- Background: `--gradient-cta` (emerald gradient)
+- 4 stats in a row, white text
+- Numbers animate counting up on scroll
+- Icons above each stat
+- Full-width banner style
+
+### 6.4 Features
+- Background: white
+- 3-column grid with icon, title, description
+- 14 feature cards total
+- Alternating section bg possible
+
+### 6.5 How It Works
+- Background: `--primary-50`
+- 3 steps horizontal with connecting line
+- Each step: number circle, icon, title, description
+- Step circles connected by dashed line
+
+### 6.6 Pricing
+- Background: `--bg`
+- 6 cards, horizontal scroll on mobile
+- "Pro" card highlighted with emerald border + "Popular" badge
+- Toggle: Per Undangan / Berlangganan
+- Expandable feature rows with check/cross icons
+
+### 6.7 Testimonials
+- Background: white
+- Auto-scrolling horizontal carousel
+- Each card: quote text, customer name, event type, star rating
+- Dots indicator below
+
+### 6.8 FAQ
+- Background: `--bg`
+- Accordion list, max-width 768px centered
+- Click to expand answer, chevron rotates
+- Smooth height animation
+
+### 6.9 Footer
+- Background: `--gradient-footer` (dark emerald)
+- 4 columns: Brand + desc, Navigasi, Bantuan, Kontak
+- White/light text
+- Payment method icons row
+- Bottom bar: copyright + version
+
+---
+
+## 7. Invitation Theme Design Specs
+
+### Shared Structure (semua tema)
+```
+┌─────────────────────────────┐
+│  COVER (fullscreen)         │
+│  - Opening animation        │
+│  - "Buka Undangan" button   │
+├─────────────────────────────┤
+│  COUPLE SECTION             │
+│  - Photo(s), names, parents │
+├─────────────────────────────┤
+│  EVENT DETAILS              │
+│  - Akad & Resepsi           │
+│  - Date, time, venue        │
+│  - Save to Calendar btn     │
+├─────────────────────────────┤
+│  COUNTDOWN                  │
+│  - Days / Hours / Min / Sec │
+├─────────────────────────────┤
+│  LOVE STORY (optional)      │
+│  - Timeline with dates      │
+├─────────────────────────────┤
+│  GALLERY                    │
+│  - Photo grid / carousel    │
+├─────────────────────────────┤
+│  RSVP FORM                  │
+│  - Name, attendance, wishes │
+├─────────────────────────────┤
+│  GUEST WISHES (live feed)   │
+├─────────────────────────────┤
+│  GIFT REGISTRY              │
+│  - Bank account(s)          │
+│  - Copy button              │
+├─────────────────────────────┤
+│  GOOGLE MAPS EMBED          │
+├─────────────────────────────┤
+│  FOOTER                     │
+│  - "Powered by Eventora"    │
+│  - Background music toggle  │
+└─────────────────────────────┘
+```
+
+### Theme Color Palettes
+
+| Theme | Primary | Secondary | Background | Text |
+|-------|---------|-----------|------------|------|
+| Emerald Garden | #059669 | #A7F3D0 | #F0FDF4 | #1E293B |
+| Rose Blush | #E11D48 | #FECDD3 | #FFF1F2 | #1E293B |
+| Midnight Noir | #D4AF37 | #1E1E1E | #0A0A0A | #F5F5F5 |
+| Rustic Charm | #92400E | #D6C4A8 | #FEFCE8 | #422006 |
+| Celestial Dream | #6366F1 | #C7D2FE | #0F172A | #E2E8F0 |
+| Tropical Paradise | #0D9488 | #FF6B6B | #F0FDFA | #1E293B |
+| Minimalist White | #1E293B | #94A3B8 | #FFFFFF | #1E293B |
+| Royal Purple | #7C3AED | #DDD6FE | #1E1031 | #F5F3FF |
+| Sakura Blossom | #DB2777 | #FBCFE8 | #FFF5F7 | #1E293B |
+| Ocean Breeze | #0284C7 | #BAE6FD | #F0F9FF | #1E293B |
+| Festive Joy | #EA580C | #FDE68A | #FFFBEB | #1E293B |
+| Classic Elegance | #166534 | #BBF7D0 | #FFFEF5 | #1E293B |
+
+### Theme Typography per Template
+- **Emerald Garden, Rose Blush, Sakura**: Playfair Display + Inter
+- **Midnight Noir, Royal Purple**: Cinzel + Raleway
+- **Rustic Charm**: Cormorant Garamond + Lato
+- **Celestial Dream**: Space Grotesk + Inter
+- **Tropical Paradise, Festive Joy**: Poppins + Inter
+- **Minimalist White, Ocean Breeze**: Inter + Inter
+- **Classic Elegance**: EB Garamond + Inter
+
+---
+
+## 8. Responsive Design Rules
+
+1. **Mobile-first**: Semua styling mulai dari mobile, lalu override untuk tablet/desktop
+2. **Invitation themes**: Selalu mobile-first (undangan dilihat di HP 95% kasus)
+3. **Touch targets**: Minimum 44x44px untuk semua interactive elements
+4. **Font scaling**: Gunakan `clamp()` untuk fluid typography jika memungkinkan
+5. **Images**: Selalu gunakan `next/image` dengan proper sizes dan placeholder blur
+6. **Horizontal scroll**: Diperbolehkan untuk event type pills dan pricing cards di mobile
+7. **Navbar mobile**: Hamburger menu dengan slide-in drawer dari kanan

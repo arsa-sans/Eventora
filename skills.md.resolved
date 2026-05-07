@@ -1,0 +1,502 @@
+# Eventora — Skills & Coding Conventions
+
+Panduan teknis dan pola kode yang HARUS diikuti saat mengerjakan setiap task di project Eventora.
+
+---
+
+## 1. File & Naming Conventions
+
+### File Naming
+| Type | Convention | Example |
+|------|-----------|---------|
+| React Component | PascalCase | `TemplateShowcase.tsx` |
+| Page Route | lowercase folder | `app/tema/page.tsx` |
+| Utility/Helper | camelCase | `themeRegistry.ts` |
+| Type Definition | camelCase | `invitation.ts` |
+| CSS Module | camelCase | `hero.module.css` |
+| Constant Data | camelCase | `pricingData.ts` |
+
+### Folder Rules
+- Satu component per file — jangan gabung banyak export component dalam satu file
+- Komponen shared/reusable taruh di `src/components/ui/`
+- Komponen spesifik halaman taruh di folder sesuai: `landing/`, `dashboard/`, `themes/`
+- Data statis (arrays, objek pricing, testimonial) taruh di `src/data/` sebagai file terpisah
+- TypeScript types taruh di `src/types/`
+
+---
+
+## 2. Component Architecture
+
+### Server vs Client Components
+
+```
+DEFAULT = Server Component (tanpa "use client")
+Gunakan Client Component HANYA jika perlu:
+  - useState, useEffect, useRef
+  - Event handlers (onClick, onChange)
+  - Framer Motion animations
+  - Browser APIs (localStorage, window)
+```
+
+**Pola yang benar:**
+```tsx
+// ✅ Server Component — page.tsx
+import { ClientHero } from "@/components/landing/Hero";
+export default function Home() {
+  return <ClientHero />;
+}
+
+// ✅ Client Component — Hero.tsx
+"use client";
+import { motion } from "framer-motion";
+export function Hero() { ... }
+```
+
+### Component Props Pattern
+```tsx
+// ✅ Selalu definisikan interface untuk props
+interface FeatureCardProps {
+  title: string;
+  description: string;
+  icon: React.ComponentType<{ className?: string }>;
+  delay?: number;
+}
+
+export function FeatureCard({ title, description, icon: Icon, delay = 0 }: FeatureCardProps) {
+  // ...
+}
+```
+
+### Data Separation Pattern
+```tsx
+// ✅ BENAR — data di file terpisah
+// src/data/features.ts
+export const features = [
+  { title: "...", description: "...", icon: "infinity" },
+];
+
+// src/components/landing/Features.tsx
+import { features } from "@/data/features";
+```
+
+---
+
+## 3. Styling Conventions (Tailwind CSS v4)
+
+### Theme Token Usage
+```tsx
+// ✅ Gunakan token dari design system
+className="bg-background text-foreground border-border"
+className="bg-primary text-white hover:bg-primary-dark"
+className="text-muted"
+
+// ❌ JANGAN hardcode warna
+className="bg-[#059669]"  // ← Hindari, kecuali di dalam theme component
+```
+
+### Responsive Pattern
+```tsx
+// ✅ Mobile-first ordering
+className="text-2xl md:text-4xl lg:text-5xl"
+className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+className="px-4 md:px-6 lg:px-8"
+```
+
+### Spacing Pattern
+```tsx
+// ✅ Section spacing konsisten
+// Setiap section landing page:
+className="py-16 md:py-24"  // vertical padding
+// Container di dalam section:
+className="container mx-auto px-4 md:px-6"
+```
+
+### Card Pattern
+```tsx
+// ✅ Standard card styling
+className="bg-surface rounded-2xl border border-border p-6 hover:shadow-lg transition-all duration-300"
+```
+
+### Tailwind v4 Theming (`@theme inline`)
+```css
+/* globals.css — Cara mendaftarkan custom color ke Tailwind v4 */
+@theme inline {
+  --color-primary: var(--primary);
+  --color-primary-dark: var(--primary-dark);
+  --color-primary-light: var(--primary-light);
+  --color-primary-50: var(--primary-50);
+  --color-accent-rose: var(--accent-rose);
+  --color-surface: var(--surface);
+  --color-muted: var(--muted);
+}
+```
+
+---
+
+## 4. Animation Patterns (Framer Motion)
+
+### Scroll Reveal — Gunakan untuk SEMUA section
+```tsx
+"use client";
+import { motion } from "framer-motion";
+
+// Untuk container section
+const sectionVariants = {
+  hidden: { opacity: 0, y: 40 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
+};
+
+<motion.section
+  variants={sectionVariants}
+  initial="hidden"
+  whileInView="visible"
+  viewport={{ once: true, margin: "-100px" }}
+>
+```
+
+### Staggered Children — Untuk grid cards
+```tsx
+const containerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.1 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+};
+
+<motion.div variants={containerVariants} initial="hidden" whileInView="visible">
+  {items.map((item) => (
+    <motion.div key={item.id} variants={itemVariants}>
+      ...
+    </motion.div>
+  ))}
+</motion.div>
+```
+
+### Hover Effect — Untuk cards
+```tsx
+<motion.div
+  whileHover={{ y: -4 }}
+  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+>
+```
+
+### Counter Animation — Untuk stats
+```tsx
+// Gunakan useInView + useMotionValue + useTransform
+import { useInView } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+
+function AnimatedCounter({ target, suffix = "" }: { target: number; suffix?: string }) {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true });
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    if (!isInView) return;
+    const duration = 2000;
+    const steps = 60;
+    const increment = target / steps;
+    let current = 0;
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= target) { setCount(target); clearInterval(timer); }
+      else setCount(Math.floor(current));
+    }, duration / steps);
+    return () => clearInterval(timer);
+  }, [isInView, target]);
+
+  return <span ref={ref}>{count.toLocaleString("id-ID")}{suffix}</span>;
+}
+```
+
+---
+
+## 5. Membuat Theme Undangan Baru (Step-by-Step)
+
+### Langkah 1: Buat file component
+```
+src/components/themes/NamaTheme.tsx
+```
+
+### Langkah 2: Gunakan struktur dasar ini
+```tsx
+"use client";
+
+import { motion } from "framer-motion";
+import type { InvitationData } from "@/types/invitation";
+
+interface ThemeProps {
+  data: InvitationData;
+}
+
+export function NamaTheme({ data }: ThemeProps) {
+  const {
+    groom_name, bride_name, event_date, event_location,
+    event_map_url, gallery_images, music_url, message,
+    groom_father, groom_mother, bride_father, bride_mother,
+    love_story, bank_accounts,
+  } = data;
+
+  return (
+    <div className="min-h-screen" style={{ /* theme colors */ }}>
+      {/* 1. COVER SECTION — fullscreen, "Buka Undangan" button */}
+      {/* 2. COUPLE SECTION — names, photos */}
+      {/* 3. EVENT DETAILS — date, time, venue */}
+      {/* 4. COUNTDOWN — live timer */}
+      {/* 5. LOVE STORY (optional) */}
+      {/* 6. GALLERY — photos grid */}
+      {/* 7. RSVP FORM */}
+      {/* 8. GUEST WISHES — message feed */}
+      {/* 9. GIFT REGISTRY — bank accounts */}
+      {/* 10. MAPS — Google Maps embed */}
+      {/* 11. FOOTER — "Powered by Eventora" */}
+    </div>
+  );
+}
+```
+
+### Langkah 3: Daftarkan di theme registry
+```tsx
+// src/lib/themeRegistry.ts
+import dynamic from "next/dynamic";
+
+export const themeRegistry: Record<string, {
+  name: string;
+  component: React.ComponentType<any>;
+  category: string;
+  colors: { primary: string; bg: string };
+}> = {
+  "emerald-garden": {
+    name: "Emerald Garden",
+    component: dynamic(() => import("@/components/themes/EmeraldGarden").then(m => m.EmeraldGarden)),
+    category: "wedding",
+    colors: { primary: "#059669", bg: "#F0FDF4" },
+  },
+  // ... tambahkan tema baru di sini
+};
+```
+
+### Langkah 4: Update `[slug]/page.tsx`
+```tsx
+import { themeRegistry } from "@/lib/themeRegistry";
+
+export default async function InvitationPage({ params }) {
+  const { slug } = await params;
+  const invitation = await fetchInvitation(slug); // dari Supabase
+  const theme = themeRegistry[invitation.theme_id];
+  if (!theme) return <div>Theme not found</div>;
+  const ThemeComponent = theme.component;
+  return <ThemeComponent data={invitation} />;
+}
+```
+
+### Rules untuk Theme Component:
+1. **Warna HARUS di-hardcode** dalam theme (bukan pakai token global) — setiap tema punya palet sendiri
+2. **Mobile-first** — undangan 95% dibuka di HP, pastikan tampilan di 375px sempurna
+3. **Selalu gunakan `motion`** untuk reveal animations di setiap section
+4. **Font** — load via `next/font/google` di theme itu sendiri atau di layout
+5. **Cover** harus fullscreen (`min-h-screen`) dengan tombol "Buka Undangan"
+6. **RSVP Form** harus functional — submit ke API `/api/rsvp`
+
+---
+
+## 6. Membuat Section Landing Page Baru (Step-by-Step)
+
+### Langkah 1: Buat file di `src/components/landing/`
+```
+NamaSectionBaru.tsx
+```
+
+### Langkah 2: Gunakan template section
+```tsx
+"use client";
+
+import { motion } from "framer-motion";
+
+export function NamaSectionBaru() {
+  return (
+    <section id="section-id" className="py-16 md:py-24 bg-background">
+      <div className="container mx-auto px-4 md:px-6">
+        {/* Section Header — selalu centered */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-12 md:mb-16"
+        >
+          <h2 className="text-3xl md:text-4xl font-serif text-foreground mb-4">
+            Judul Section
+          </h2>
+          <p className="text-muted max-w-2xl mx-auto text-lg">
+            Deskripsi singkat section.
+          </p>
+        </motion.div>
+
+        {/* Section Content */}
+        <div>
+          {/* ... */}
+        </div>
+      </div>
+    </section>
+  );
+}
+```
+
+### Langkah 3: Import dan tambahkan di `app/page.tsx`
+```tsx
+import { NamaSectionBaru } from "@/components/landing/NamaSectionBaru";
+// Tambahkan di posisi yang sesuai dalam <main>
+```
+
+### Rules untuk Landing Section:
+1. Selalu ada `id` untuk anchor navigation dari navbar
+2. Background alternating: `bg-background` → `bg-white` → `bg-background`
+3. Section header selalu centered dengan `mb-12 md:mb-16`
+4. Gunakan `motion.div` dengan `whileInView` untuk scroll reveal
+5. Max content width: `max-w-6xl mx-auto` untuk grid, `max-w-3xl mx-auto` untuk text
+
+---
+
+## 7. Supabase Query Patterns
+
+### Client-side (untuk komponen interaktif)
+```tsx
+"use client";
+import { createClient } from "@/lib/supabase";
+
+// Di dalam component:
+const supabase = createClient();
+const { data, error } = await supabase
+  .from("invitations")
+  .select("*")
+  .eq("slug", slug)
+  .eq("status", "active")
+  .single();
+```
+
+### Server-side (untuk page/API routes)
+```tsx
+// Di page.tsx (Server Component):
+import { createClient } from "@/lib/supabase";
+
+export default async function Page() {
+  const supabase = createClient();
+  const { data } = await supabase.from("themes").select("*").order("name");
+  return <TemplateGallery themes={data} />;
+}
+```
+
+### Insert pattern (RSVP)
+```tsx
+const { error } = await supabase.from("rsvps").insert({
+  invitation_id: invitationId,
+  guest_name: name,
+  attendance: attendance,
+  message: message,
+  pax: numberOfGuests,
+});
+```
+
+---
+
+## 8. Error Handling
+
+```tsx
+// ✅ Pattern untuk data fetching
+try {
+  const { data, error } = await supabase.from("table").select("*");
+  if (error) throw error;
+  return data;
+} catch (err) {
+  console.error("Failed to fetch:", err);
+  return null; // atau tampilkan error UI
+}
+
+// ✅ Pattern untuk form submission
+const [isLoading, setIsLoading] = useState(false);
+const [error, setError] = useState<string | null>(null);
+const [success, setSuccess] = useState(false);
+
+async function handleSubmit(e: React.FormEvent) {
+  e.preventDefault();
+  setIsLoading(true);
+  setError(null);
+  try {
+    // ... submit
+    setSuccess(true);
+  } catch (err) {
+    setError("Gagal mengirim. Silakan coba lagi.");
+  } finally {
+    setIsLoading(false);
+  }
+}
+```
+
+---
+
+## 9. SEO Rules
+
+```tsx
+// ✅ Setiap page HARUS export metadata
+export const metadata: Metadata = {
+  title: "Judul Halaman | Eventora",
+  description: "Deskripsi 150-160 karakter dalam Bahasa Indonesia",
+  openGraph: {
+    title: "...",
+    description: "...",
+    type: "website",
+  },
+};
+```
+
+- Setiap halaman: 1x `<h1>`, heading hierarchy berurutan
+- Semua image: wajib `alt` text deskriptif
+- Link internal: gunakan `next/link`
+- Semantic HTML: `<section>`, `<nav>`, `<main>`, `<footer>`, `<article>`
+
+---
+
+## 10. Performance Rules
+
+1. **Images**: Selalu `next/image` dengan `width`, `height`, `sizes`, dan `placeholder="blur"` jika ada
+2. **Dynamic imports**: Theme components HARUS menggunakan `dynamic(() => import(...))` untuk code-splitting
+3. **Font loading**: Gunakan `next/font/google` — JANGAN load via `<link>` di head
+4. **Bundle size**: Jangan import seluruh library — gunakan tree-shaking:
+   ```tsx
+   // ✅ Import spesifik
+   import { Heart, MapPin, Calendar } from "lucide-react";
+   // ❌ JANGAN
+   import * as Icons from "lucide-react";
+   ```
+5. **Lazy sections**: Section di bawah fold bisa menggunakan `Suspense` boundary
+
+---
+
+## 11. Accessibility
+
+1. **Warna kontras**: Minimum 4.5:1 untuk teks body, 3:1 untuk teks large
+2. **Focus visible**: Semua interactive elements harus punya focus ring visible
+3. **Keyboard navigation**: Tab order harus logical
+4. **ARIA labels**: Tombol icon-only harus punya `aria-label`
+5. **Form labels**: Setiap input HARUS punya `<label>` yang ter-associate
+
+---
+
+## 12. Git Workflow
+
+```bash
+# Branch naming
+feature/landing-hero
+feature/theme-emerald-garden
+fix/pricing-responsive
+refactor/color-system
+
+# Commit message format (Bahasa Inggris)
+feat: add testimonials carousel section
+fix: pricing card overflow on mobile
+style: update hero gradient colors
+refactor: extract theme base component
+```
