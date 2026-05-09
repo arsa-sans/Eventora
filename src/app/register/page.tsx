@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { Mail, Lock, User, Eye, EyeOff, ArrowRight, AlertTriangle, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase";
+import { useToast } from "@/components/ui/toast";
 
 function RegisterContent() {
   const searchParams = useSearchParams();
@@ -18,7 +19,8 @@ function RegisterContent() {
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [successStatus, setSuccessStatus] = useState(false);
+  const { success, error: toastError } = useToast();
 
   const supabase = createClient();
 
@@ -38,12 +40,15 @@ function RegisterContent() {
     });
 
     if (error) {
-      setError(error.message.includes("already registered")
+      const msg = error.message.includes("already registered")
         ? "Email sudah terdaftar. Silakan login."
-        : error.message);
+        : error.message;
+      setError(msg);
+      toastError("Registrasi Gagal", msg);
       setLoading(false);
     } else {
-      setSuccess(true);
+      setSuccessStatus(true);
+      success("Registrasi Berhasil! 🎉", "Silakan cek email kamu untuk verifikasi.");
       setLoading(false);
     }
   }
@@ -56,10 +61,14 @@ function RegisterContent() {
         redirectTo: `${window.location.origin}/api/auth/callback?redirectTo=/dashboard`,
       },
     });
-    if (error) { setError("Gagal daftar dengan Google."); setLoading(false); }
+    if (error) { 
+      setError("Gagal daftar dengan Google."); 
+      toastError("Registrasi Google Gagal", "Terjadi kesalahan saat mendaftar dengan Google.");
+      setLoading(false); 
+    }
   }
 
-  if (success) {
+  if (successStatus) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4" style={{ background: "var(--gradient-hero)" }}>
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}

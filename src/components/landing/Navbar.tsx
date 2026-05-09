@@ -73,11 +73,15 @@ export function Navbar() {
             {user ? (
               <>
                 <Link
-                  href="/dashboard"
+                  href="/dashboard/settings"
                   className="flex items-center gap-2 text-sm font-medium text-foreground/80 hover:text-primary transition-colors"
                 >
-                  <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
-                    <User className="w-3.5 h-3.5 text-primary" />
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border border-border">
+                    {user.user_metadata?.avatar_url ? (
+                      <img src={user.user_metadata.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-4 h-4 text-primary" />
+                    )}
                   </div>
                   {user.user_metadata?.full_name?.split(" ")[0] || "Akun"}
                 </Link>

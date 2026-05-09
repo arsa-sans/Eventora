@@ -28,6 +28,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // SECURITY: Verifikasi undangan sudah aktif (dibayar) sebelum menerima RSVP
+    const { data: invitation } = await supabaseAdmin
+      .from("invitations")
+      .select("status")
+      .eq("id", invitation_id)
+      .single();
+
+    if (!invitation || invitation.status !== "active") {
+      return NextResponse.json(
+        { error: "Undangan belum aktif. RSVP tidak dapat dikirim." },
+        { status: 403 }
+      );
+    }
+
     const { data, error } = await supabaseAdmin
       .from("rsvps")
       .insert({
@@ -63,6 +77,20 @@ export async function GET(request: NextRequest) {
     }
 
     console.log("[RSVP GET] Fetching for invitation:", invitationId);
+
+    // SECURITY: Verifikasi undangan sudah aktif sebelum menampilkan data RSVP
+    const { data: invitation } = await supabaseAdmin
+      .from("invitations")
+      .select("status")
+      .eq("id", invitationId)
+      .single();
+
+    if (!invitation || invitation.status !== "active") {
+      return NextResponse.json(
+        { error: "Undangan belum aktif." },
+        { status: 403 }
+      );
+    }
 
     const { data, error } = await supabaseAdmin
       .from("rsvps")

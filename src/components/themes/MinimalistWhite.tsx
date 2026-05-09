@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { MapPin, Calendar, Copy, Check, ChevronDown, Minus } from "lucide-react";
 import type { InvitationData } from "@/types/invitation";
 import { toEmbedMapUrl } from "@/lib/mapUtils";
+import { useToast } from "@/components/ui/toast";
 
 interface Props { data: InvitationData; }
 
@@ -42,6 +43,7 @@ export function MinimalistWhite({ data }: Props) {
   } = data;
 
   const [opened, setOpened] = useState(false);
+  const { success, error: toastError } = useToast();
   const [copied, setCopied] = useState<string | null>(null);
   const [rsvpSent, setRsvpSent] = useState(false);
   const [rsvpLoading, setRsvpLoading] = useState(false);
@@ -83,13 +85,24 @@ export function MinimalistWhite({ data }: Props) {
       if (res.ok) {
         setRsvpSent(true);
         setWishes(prev => [{ name: rsvpName, msg: rsvpMessage, attend: rsvpAttendance === "yes" ? "Hadir" : rsvpAttendance === "no" ? "Tidak Hadir" : "Mungkin" }, ...prev]);
+        success("RSVP Terkirim", "Terima kasih atas konfirmasi kehadiran Anda!");
+      } else {
+        toastError("RSVP Gagal", "Terjadi kesalahan saat mengirim RSVP.");
       }
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+      toastError("RSVP Gagal", "Terjadi kesalahan jaringan.");
+    }
     setRsvpLoading(false);
   }
 
   const dateStr = new Date(event_date).toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-  const copyAcct = (n: string) => { navigator.clipboard.writeText(n); setCopied(n); setTimeout(() => setCopied(null), 2000); };
+  const copyAcct = (n: string) => { 
+    navigator.clipboard.writeText(n); 
+    setCopied(n); 
+    success("Nomor Rekening Tersalin", n);
+    setTimeout(() => setCopied(null), 2000); 
+  };
 
   if (!opened) {
     return (

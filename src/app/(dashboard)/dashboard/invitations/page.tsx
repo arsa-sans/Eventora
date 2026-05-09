@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Plus, Eye, Trash2, Copy, Check, ExternalLink, CreditCard, Loader2, CheckCircle, FileEdit, Calendar, Users, Palette, Pencil } from "lucide-react";
+import { useToast } from "@/components/ui/toast";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { Plus, Eye, Trash2, Copy, Check, ExternalLink, CreditCard, Loader2, CheckCircle, FileEdit, Calendar, Users, Palette, Pencil, Lock } from "lucide-react";
 
 interface Invitation {
   id: string;
@@ -23,7 +25,9 @@ export default function InvitationsPage() {
   const [loading, setLoading] = useState(true);
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [invitationToDelete, setInvitationToDelete] = useState<string | null>(null);
   const [checkingOut, setCheckingOut] = useState<string | null>(null);
+  const { success, error: toastError, info } = useToast();
 
   useEffect(() => {
     fetchInvitations();
@@ -43,16 +47,20 @@ export default function InvitationsPage() {
     }
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("Yakin ingin menghapus undangan ini?")) return;
+  async function handleDeleteConfirm(id: string) {
     setDeleting(id);
     try {
       const res = await fetch(`/api/invitations?id=${id}`, { method: "DELETE" });
       if (res.ok) {
         setInvitations((prev) => prev.filter((inv) => inv.id !== id));
+        success("Undangan Dihapus", "Undangan berhasil dihapus.");
+        setInvitationToDelete(null);
+      } else {
+        toastError("Gagal Menghapus", "Terjadi kesalahan saat menghapus undangan.");
       }
     } catch (err) {
       console.error("Delete error:", err);
+      toastError("Gagal Menghapus", "Terjadi kesalahan jaringan.");
     } finally {
       setDeleting(null);
     }
@@ -60,6 +68,7 @@ export default function InvitationsPage() {
 
   async function handleActivate(inv: Invitation) {
     setCheckingOut(inv.id);
+    info("Memproses Pembayaran...", "Membuat link pembayaran untuk mengaktifkan undangan.");
     try {
       // Find the price from theme
       const res = await fetch("/api/checkout", {
@@ -72,13 +81,14 @@ export default function InvitationsPage() {
       });
       const data = await res.json();
       if (res.ok && data.checkout_url) {
-        window.location.href = data.checkout_url;
+        success("Mengarahkan ke Pembayaran", "Silakan selesaikan pembayaran di halaman berikutnya.");
+        setTimeout(() => { window.location.href = data.checkout_url; }, 800);
       } else {
-        alert(data.error || "Gagal membuat link pembayaran");
+        toastError("Gagal Checkout", data.error || "Gagal membuat link pembayaran.");
       }
     } catch (err) {
       console.error("Checkout error:", err);
-      alert("Gagal membuat link pembayaran");
+      toastError("Gagal Checkout", "Terjadi kesalahan jaringan.");
     } finally {
       setCheckingOut(null);
     }
@@ -88,6 +98,7 @@ export default function InvitationsPage() {
     const url = `${window.location.origin}/${slug}`;
     navigator.clipboard.writeText(url);
     setCopiedSlug(slug);
+    success("Link Tersalin! 📋", `${url}`);
     setTimeout(() => setCopiedSlug(null), 2000);
   }
 
@@ -158,19 +169,28 @@ export default function InvitationsPage() {
                     <span className="inline-flex items-center gap-1"><Palette className="w-3 h-3" /> {inv.theme_id}</span>
                   </p>
                   <div className="flex items-center gap-1 text-[11px] text-muted">
-                    <span className="bg-gray-100 px-2 py-0.5 rounded font-mono truncate max-w-[180px] sm:max-w-[260px]">
-                      /{inv.slug}
-                    </span>
+                    {inv.status === "active" ? (
+                      <span className="bg-gray-100 px-2 py-0.5 rounded font-mono truncate max-w-[180px] sm:max-w-[260px]">
+                        /{inv.slug}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-600 px-2 py-0.5 rounded text-[10px] font-medium">
+                        <Lock className="w-2.5 h-2.5" /> Aktifkan untuk mendapatkan link undangan
+                      </span>
+                    )}
                   </div>
                 </div>
 
                 {/* Actions — wrap on mobile */}
                 <div className="flex items-center flex-wrap gap-2">
-                  <button onClick={() => copyLink(inv.slug)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 hover:bg-gray-200 transition-colors">
-                    {copiedSlug === inv.slug ? <Check className="w-3 h-3 text-green-600" /> : <Copy className="w-3 h-3" />}
-                    <span className="hidden xs:inline">{copiedSlug === inv.slug ? "Tersalin!" : "Salin"}</span>
-                  </button>
+                  {/* Tombol Salin — hanya muncul jika undangan sudah aktif (dibayar) */}
+                  {inv.status === "active" && (
+                    <button onClick={() => copyLink(inv.slug)}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 hover:bg-gray-200 transition-colors">
+                      {copiedSlug === inv.slug ? <Check className="w-3 h-3 text-green-600" /> : <Copy className="w-3 h-3" />}
+                      <span className="hidden xs:inline">{copiedSlug === inv.slug ? "Tersalin!" : "Salin"}</span>
+                    </button>
+                  )}
 
                   <Link href={`/dashboard/invitations/${inv.id}/edit`}>
                     <button className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors">
@@ -178,9 +198,10 @@ export default function InvitationsPage() {
                     </button>
                   </Link>
 
-                  <Link href={`/${inv.slug}`} target="_blank">
+                  {/* Lihat = halaman publik (hanya untuk aktif); Preview = template preview (untuk draft) */}
+                  <Link href={inv.status === "active" ? `/${inv.slug}` : `/preview/${inv.theme_id}`} target="_blank">
                     <button className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-                      <Eye className="w-3 h-3" /> Lihat
+                      <Eye className="w-3 h-3" /> {inv.status === "active" ? "Lihat" : "Preview"}
                     </button>
                   </Link>
 
@@ -192,7 +213,7 @@ export default function InvitationsPage() {
                     </button>
                   )}
 
-                  <button onClick={() => handleDelete(inv.id)} disabled={deleting === inv.id}
+                  <button onClick={() => setInvitationToDelete(inv.id)} disabled={deleting === inv.id}
                     className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50 ml-auto">
                     {deleting === inv.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
                   </button>
@@ -202,6 +223,18 @@ export default function InvitationsPage() {
           })}
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={invitationToDelete !== null}
+        onClose={() => setInvitationToDelete(null)}
+        onConfirm={() => {
+          if (invitationToDelete) handleDeleteConfirm(invitationToDelete);
+        }}
+        title="Hapus Undangan"
+        description="Yakin ingin menghapus undangan ini? Data yang dihapus tidak dapat dikembalikan."
+        confirmText="Hapus"
+        isLoading={deleting !== null}
+      />
     </div>
   );
 }

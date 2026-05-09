@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertTriangle, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase";
+import { useToast } from "@/components/ui/toast";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -13,6 +14,7 @@ export default function LoginPage() {
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { success, error: toastError } = useToast();
 
   const supabase = createClient();
 
@@ -22,12 +24,15 @@ export default function LoginPage() {
     setError(null);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      setError(error.message === "Invalid login credentials"
+      const msg = error.message === "Invalid login credentials"
         ? "Email atau password salah. Silakan coba lagi."
-        : error.message);
+        : error.message;
+      setError(msg);
+      toastError("Login Gagal", msg);
       setLoading(false);
     } else {
-      window.location.href = "/dashboard";
+      success("Berhasil Masuk! 🎉", "Selamat datang kembali di Eventora.");
+      setTimeout(() => { window.location.href = "/dashboard"; }, 800);
     }
   }
 
@@ -41,7 +46,9 @@ export default function LoginPage() {
       },
     });
     if (error) {
-      setError("Gagal login dengan Google. Silakan coba lagi.");
+      const msg = "Gagal login dengan Google. Silakan coba lagi.";
+      setError(msg);
+      toastError("Login Google Gagal", msg);
       setLoading(false);
     }
   }

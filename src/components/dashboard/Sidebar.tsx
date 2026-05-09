@@ -20,6 +20,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Undangan Saya', href: '/dashboard/invitations', icon: Mail },
     { name: 'Data RSVP', href: '/dashboard/rsvp', icon: Users },
+    { name: 'Pengaturan', href: '/dashboard/settings', icon: Settings },
   ];
 
   async function handleLogout() {

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MapPin, Calendar, Music, ChevronDown, Copy, Check, Leaf, Heart, Mail } from "lucide-react";
 import type { InvitationData } from "@/types/invitation";
 import { toEmbedMapUrl } from "@/lib/mapUtils";
+import { useToast } from "@/components/ui/toast";
 
 interface Props {
   data: InvitationData;
@@ -72,6 +73,7 @@ export function EmeraldGarden({ data }: Props) {
   } = data;
 
   const [opened, setOpened] = useState(false);
+  const { success, error: toastError } = useToast();
   const [copied, setCopied] = useState<string | null>(null);
   const [rsvpSent, setRsvpSent] = useState(false);
   const [rsvpLoading, setRsvpLoading] = useState(false);
@@ -113,8 +115,14 @@ export function EmeraldGarden({ data }: Props) {
       if (res.ok) {
         setRsvpSent(true);
         setWishes(prev => [{ name: rsvpName, msg: rsvpMessage, attend: rsvpAttendance === "yes" ? "Hadir" : rsvpAttendance === "no" ? "Tidak Hadir" : "Mungkin" }, ...prev]);
+        success("RSVP Terkirim", "Terima kasih atas konfirmasi kehadiran Anda!");
+      } else {
+        toastError("RSVP Gagal", "Terjadi kesalahan saat mengirim RSVP.");
       }
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+      toastError("RSVP Gagal", "Terjadi kesalahan jaringan.");
+    }
     setRsvpLoading(false);
   }
 
@@ -126,6 +134,7 @@ export function EmeraldGarden({ data }: Props) {
   const copyAccount = (number: string) => {
     navigator.clipboard.writeText(number);
     setCopied(number);
+    success("Nomor Rekening Tersalin", number);
     setTimeout(() => setCopied(null), 2000);
   };
 

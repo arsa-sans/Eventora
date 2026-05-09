@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { templates } from "@/data/templatesData";
 import { themeRegistry } from "@/lib/themeRegistry";
 import { createClient } from "@/lib/supabase";
+import { useToast } from "@/components/ui/toast";
 import {
   ArrowLeft, ArrowRight, Check, Upload, X, Plus, Trash2,
   User, Calendar, MapPin, Heart, Image as ImageIcon, Music, CreditCard, Loader2, AlertTriangle
@@ -25,10 +26,12 @@ const STEPS = [
 export default function NewInvitationPage() {
   const router = useRouter();
   const supabase = createClient();
+  const { success, error: toastError, info } = useToast();
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [missingFields, setMissingFields] = useState<string[]>([]);
 
   // Step 1: Couple
   const [groomName, setGroomName] = useState("");
@@ -92,6 +95,7 @@ export default function NewInvitationPage() {
     if (!files || files.length === 0) return;
 
     setUploadingImages(true);
+    info("Mengupload foto...", `Memproses ${files.length} foto.`);
     const newUrls: string[] = [];
 
     for (let i = 0; i < files.length; i++) {
@@ -112,6 +116,11 @@ export default function NewInvitationPage() {
 
     setGalleryImages((prev) => [...prev, ...newUrls]);
     setUploadingImages(false);
+    if (newUrls.length > 0) {
+      success("Foto Berhasil Diupload", `${newUrls.length} foto telah ditambahkan ke galeri.`);
+    } else {
+      toastError("Upload Gagal", "Gagal mengupload foto. Coba lagi.");
+    }
     e.target.value = "";
   }
 
@@ -119,8 +128,43 @@ export default function NewInvitationPage() {
     setGalleryImages(galleryImages.filter((_, i) => i !== index));
   }
 
+  // --- Validation ---
+  function validateStep(currentStep: number) {
+    const missing: string[] = [];
+    if (currentStep === 1) {
+      if (!groomName.trim()) missing.push("Nama Panggilan Pria");
+      if (!brideName.trim()) missing.push("Nama Panggilan Wanita");
+      if (!groomFather.trim()) missing.push("Ayah Pria");
+      if (!groomMother.trim()) missing.push("Ibu Pria");
+      if (!brideFather.trim()) missing.push("Ayah Wanita");
+      if (!brideMother.trim()) missing.push("Ibu Wanita");
+      if (!message.trim()) missing.push("Pesan / Kata Sambutan");
+    } else if (currentStep === 2) {
+      if (!eventDate) missing.push("Tanggal Acara");
+      if (!eventTime) missing.push("Waktu Acara");
+      if (!eventLocation.trim()) missing.push("Lokasi Acara");
+    }
+    return missing;
+  }
+
+  function handleNextStep() {
+    const missing = validateStep(step);
+    if (missing.length > 0) {
+      setMissingFields(missing);
+      return;
+    }
+    setMissingFields([]);
+    setStep(step + 1);
+  }
+
   // --- Submit ---
   async function handleSubmit() {
+    const missing = validateStep(step);
+    if (missing.length > 0) {
+      setMissingFields(missing);
+      return;
+    }
+    setMissingFields([]);
     setSaving(true);
     setError(null);
 
@@ -158,9 +202,11 @@ export default function NewInvitationPage() {
         throw new Error(data.error || "Gagal membuat undangan");
       }
 
-      router.push("/dashboard/invitations");
+      success("Undangan Berhasil Dibuat! 🎉", `Undangan ${groomName} & ${brideName} telah disimpan sebagai draft.`);
+      setTimeout(() => router.push("/dashboard/invitations"), 1000);
     } catch (err: any) {
       setError(err.message);
+      toastError("Gagal Menyimpan", err.message);
     } finally {
       setSaving(false);
     }
@@ -187,7 +233,12 @@ export default function NewInvitationPage() {
           return (
             <div key={s.id} className="flex items-center">
               <button
-                onClick={() => s.id < step && setStep(s.id)}
+                onClick={() => {
+                  if (s.id < step) {
+                    setMissingFields([]);
+                    setStep(s.id);
+                  }
+                }}
                 className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all whitespace-nowrap ${
                   isActive
                     ? "bg-primary text-white shadow-md"
@@ -412,17 +463,32 @@ export default function NewInvitationPage() {
           </div>
         )}
 
+        {/* ═══ VALIDATION ERROR ═══ */}
+        {missingFields.length > 0 && (
+          <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-sm">
+            <div className="flex items-center gap-2 mb-2 font-semibold">
+              <AlertTriangle className="w-4 h-4" />
+              <span>Harap lengkapi data berikut sebelum melanjutkan:</span>
+            </div>
+            <ul className="list-disc list-inside ml-2 text-xs space-y-1">
+              {missingFields.map((field, idx) => (
+                <li key={idx}>{field}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* ═══ NAVIGATION ═══ */}
         <div className="pt-6 flex flex-col-reverse sm:flex-row sm:justify-between gap-3 border-t border-border mt-6">
           {step > 1 ? (
-            <Button variant="outline" className="w-full sm:w-auto" onClick={() => setStep(step - 1)}>
+            <Button variant="outline" className="w-full sm:w-auto" onClick={() => { setMissingFields([]); setStep(step - 1); }}>
               <ArrowLeft className="w-4 h-4" /> Kembali
             </Button>
           ) : (
             <div />
           )}
           {step < 5 ? (
-            <Button className="w-full sm:w-auto" onClick={() => setStep(step + 1)}>
+            <Button className="w-full sm:w-auto" onClick={handleNextStep}>
               Selanjutnya <ArrowRight className="w-4 h-4" />
             </Button>
           ) : (
