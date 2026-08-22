@@ -1,8 +1,3 @@
--- ============================================
--- EVENTORA — Full Database Schema (Enhanced)
--- ============================================
-
--- 1. Profiles Table (extends Supabase auth.users)
 create table if not exists public.profiles (
   id uuid references auth.users on delete cascade not null primary key,
   email text not null,
@@ -12,7 +7,6 @@ create table if not exists public.profiles (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 2. Themes Table
 create table if not exists public.themes (
   id text primary key, -- e.g. 'emerald-garden'
   name text not null,
@@ -24,7 +18,6 @@ create table if not exists public.themes (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 3. Invitations Table (Enhanced)
 create table if not exists public.invitations (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references public.profiles(id) on delete cascade not null,
@@ -36,7 +29,6 @@ create table if not exists public.invitations (
   theme_id text not null default 'emerald-garden',
   activated_at timestamp with time zone,
 
-  -- Couple / Host info
   groom_name text,
   bride_name text,
   host_name text,
@@ -47,10 +39,7 @@ create table if not exists public.invitations (
   groom_photo text,
   bride_photo text,
   cover_photo text,
-
-  -- Event details (JSON array for multi-event support)
   events jsonb default '[]'::jsonb,
-  -- Legacy single event fields
   event_date timestamp with time zone,
   event_time text,
   event_location text,
@@ -108,9 +97,6 @@ alter table public.invitations enable row level security;
 alter table public.rsvps enable row level security;
 alter table public.transactions enable row level security;
 
--- ============================================
--- POLICIES
--- ============================================
 
 -- Profiles
 create policy "Users can view their own profiles."
@@ -149,9 +135,6 @@ create policy "Anyone can view rsvps for active invitations."
 create policy "Users can view their own transactions."
   on public.transactions for select using (auth.uid() = user_id);
 
--- ============================================
--- TRIGGER: Auto-create profile on signup
--- ============================================
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
@@ -172,10 +155,6 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
--- ============================================
--- STORAGE: Create bucket for invitation images
--- ============================================
--- Run this in Supabase SQL Editor separately:
 insert into storage.buckets (id, name, public) values ('invitation-images', 'invitation-images', true);
 
 create policy "Anyone can view invitation images"
