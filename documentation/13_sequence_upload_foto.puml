@@ -1,0 +1,138 @@
+@startuml Eventora_Sequence_Upload_Foto
+' ============================================================
+'  EVENTORA — Sequence Diagram: Upload Foto Galeri/Prewedding
+'  Komponen: Browser, Page, API Route, Supabase Auth, Storage
+' ============================================================
+
+skinparam sequence {
+  ArrowColor #047857
+  ActorBorderColor #059669
+  LifeLineBorderColor #059669
+  LifeLineBackgroundColor #ECFDF5
+  ParticipantBorderColor #059669
+  ParticipantBackgroundColor #ECFDF5
+  ParticipantFontColor #1E293B
+  BoxBorderColor #059669
+  BoxBackgroundColor #F0FDF4
+  DividerBackgroundColor #D1FAE5
+}
+skinparam defaultFontName Inter
+
+title Sequence Diagram — Upload Foto Galeri/Prewedding
+
+' ============================================================
+'  PARTICIPANTS
+' ============================================================
+
+actor "User\n(Browser)" as User
+box "Frontend (Next.js)" #F0FDF4
+  participant "Invitation Form\n(NewPage / EditPage)" as Page <<Client Component>>
+end box
+box "Backend (Next.js API)" #ECFDF5
+  participant "Upload API\n(/api/upload)" as UploadAPI <<API Route>>
+end box
+box "Supabase" #D1FAE5
+  participant "Supabase Server\nClient" as SBServer <<SSR Client>>
+  database "Supabase\nStorage" as Storage
+end box
+
+' ============================================================
+'  FLOW
+' ============================================================
+
+== Upload Foto ==
+
+User -> Page : Step 3 (Cerita & Galeri)\nKlik "Upload Foto"
+activate Page
+
+User -> Page : Pilih file dari device\n(input type="file")
+
+Page -> Page : Validasi client-side:\n• File terpilih\n• Preview thumbnail
+
+Page -> UploadAPI : POST /api/upload\nContent-Type: multipart/form-data\nBody: FormData {\n  file: File (binary)\n}
+activate UploadAPI
+
+' --- Authentication ---
+UploadAPI -> SBServer : createServerSupabaseClient()
+activate SBServer
+SBServer -> SBServer : auth.getUser()
+
+alt User Terautentikasi
+  SBServer --> UploadAPI : {user: {id: "uuid-xxx"}}
+  deactivate SBServer
+
+  ' --- File Validation ---
+  UploadAPI -> UploadAPI : Validasi server-side:\n• request.formData()\n• file instanceof File
+
+  UploadAPI -> UploadAPI : Validasi format file:\nallowedTypes = [\n  'image/jpeg',\n  'image/png',\n  'image/webp',\n  'image/gif'\n]\nfile.type ∈ allowedTypes?
+
+  alt Format Tidak Valid
+    UploadAPI --> Page : 400 {\n  error: "Tipe file tidak didukung.\n  Gunakan JPEG, PNG, WebP,\n  atau GIF"\n}
+    Page --> User : Toast error:\n"Format file tidak didukung"
+  else Format Valid
+
+    UploadAPI -> UploadAPI : Validasi ukuran file:\nfile.size <= 5 * 1024 * 1024\n(max 5MB)
+
+    alt Ukuran Melebihi Batas
+      UploadAPI --> Page : 400 {\n  error: "Ukuran file melebihi\n  batas 5MB"\n}
+      Page --> User : Toast error:\n"File terlalu besar (max 5MB)"
+    else Ukuran Valid
+
+      ' --- File Processing ---
+      UploadAPI -> UploadAPI : Generate filename:\next = file.name.split('.').pop()\nfileName = \n  "{user_id}/{timestamp}-{random4}.{ext}"\n\nContoh:\n"uuid-xxx/1724508000000-a1b2.jpg"
+
+      UploadAPI -> UploadAPI : Convert file to Buffer:\nbuffer = Buffer.from(\n  await file.arrayBuffer()\n)
+
+      ' --- Upload to Storage ---
+      UploadAPI -> Storage : supabase.storage\n  .from('invitation-images')\n  .upload(\n    fileName,\n    buffer,\n    {\n      contentType: file.type,\n      upsert: false\n    }\n  )
+      activate Storage
+
+      alt Upload Berhasil
+        Storage --> UploadAPI : {data: {path}, error: null}
+
+        UploadAPI -> Storage : supabase.storage\n  .from('invitation-images')\n  .getPublicUrl(filePath)
+        Storage --> UploadAPI : {data: {\n  publicUrl:\n  "https://xxx.supabase.co/\n   storage/v1/object/public/\n   invitation-images/\n   uuid-xxx/1724508000000-a1b2.jpg"\n}}
+        deactivate Storage
+
+        UploadAPI --> Page : 200 {\n  url: "https://xxx.supabase.co/..."\n}
+        deactivate UploadAPI
+
+        Page -> Page : Tambahkan URL ke\ngallery_images[]\nstate array
+
+        Page --> User : Tampilkan preview foto\nyang berhasil diupload ✓
+
+      else Upload Gagal (Storage Error)
+        Storage --> UploadAPI : {data: null, error: {...}}
+        deactivate Storage
+        UploadAPI --> Page : 500 {\n  error: "Gagal mengupload\n  gambar"\n}
+        deactivate UploadAPI
+        Page --> User : Toast error:\n"Gagal mengupload gambar"
+      end
+
+    end
+  end
+
+else User Tidak Terautentikasi
+  SBServer --> UploadAPI : {user: null}
+  deactivate SBServer
+  UploadAPI --> Page : 401 {\n  error: "Unauthorized"\n}
+  deactivate UploadAPI
+  Page --> User : Toast error:\n"Sesi expired, login ulang"
+end
+
+deactivate Page
+
+' ============================================================
+'  NOTES
+' ============================================================
+
+note over Storage
+  **Storage Bucket: invitation-images**
+  • Public read access (anyone can view)
+  • Upload: Authenticated users only
+  • Update/Delete: Owner only
+    (via RLS: folder matches user_id)
+  • Structure: {user_id}/{filename}
+end note
+
+@enduml

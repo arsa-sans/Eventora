@@ -1,0 +1,153 @@
+@startuml Eventora_Sequence_Aktivasi_Pembayaran
+' ============================================================
+'  EVENTORA — Sequence Diagram: Aktivasi Undangan via Pembayaran
+'  Komponen: Browser, Dashboard, API Routes, Mayar, Supabase, DB
+' ============================================================
+
+skinparam sequence {
+  ArrowColor #047857
+  ActorBorderColor #059669
+  LifeLineBorderColor #059669
+  LifeLineBackgroundColor #ECFDF5
+  ParticipantBorderColor #059669
+  ParticipantBackgroundColor #ECFDF5
+  ParticipantFontColor #1E293B
+  BoxBorderColor #059669
+  BoxBackgroundColor #F0FDF4
+  DividerBackgroundColor #D1FAE5
+}
+skinparam defaultFontName Inter
+
+title Sequence Diagram — Aktivasi Undangan via Pembayaran Mayar
+
+' ============================================================
+'  PARTICIPANTS
+' ============================================================
+
+actor "User\n(Browser)" as User
+box "Frontend (Next.js)" #F0FDF4
+  participant "InvitationsPage\n(/invitations)" as Page <<Client Component>>
+end box
+box "Backend (Next.js API Routes)" #ECFDF5
+  participant "Checkout API\n(/api/checkout)" as CheckoutAPI <<API Route>>
+  participant "Webhook API\n(/api/webhook/mayar)" as WebhookAPI <<API Route>>
+end box
+box "Mayar Payment Gateway" #FFF1F2
+  participant "Mayar API\n(api.mayar.id)" as MayarAPI <<External API>>
+  participant "Mayar Checkout\nPage" as MayarPage <<External UI>>
+end box
+box "Supabase" #D1FAE5
+  participant "Supabase Server\nClient" as SBServer <<SSR Client>>
+  participant "Supabase Service\nRole Client" as SBService <<Service Role>>
+  database "PostgreSQL\nDatabase" as DB
+end box
+
+' ============================================================
+'  FASE 1: CHECKOUT — Membuat Invoice
+' ============================================================
+
+== Fase 1: Checkout — Membuat Invoice Pembayaran ==
+
+User -> Page : Klik "Aktifkan" pada\nundangan berstatus Draft
+activate Page
+
+Page --> User : ConfirmModal:\n"Aktifkan undangan?\nHarga: Rp XX.000"
+
+User -> Page : Konfirmasi pembayaran
+
+Page -> CheckoutAPI : POST /api/checkout\n{template_id: "emerald-garden"}
+activate CheckoutAPI
+
+CheckoutAPI -> SBServer : createServerSupabaseClient()
+activate SBServer
+SBServer -> SBServer : auth.getUser()
+SBServer --> CheckoutAPI : {user: {id, email,\n  user_metadata.full_name}}
+deactivate SBServer
+
+CheckoutAPI -> CheckoutAPI : Lookup harga tema:\ntemplates.find(\n  t => t.id === template_id\n)\nprice = template.price
+
+CheckoutAPI -> MayarAPI : POST /hl/v1/invoice/create\nHeaders: {\n  Authorization: Bearer MAYAR_API_KEY\n}\nBody: {\n  name: "Aktivasi Undangan Eventora",\n  amount: 49000,\n  email: user.email,\n  description: "Tema Emerald Garden",\n  expiredAt: ISO (now + 24h)\n}
+activate MayarAPI
+
+MayarAPI -> MayarAPI : Buat invoice pembayaran
+MayarAPI --> CheckoutAPI : {\n  statusCode: 200,\n  data: {\n    link: "https://mayar.id/pay/xxx",\n    id: "txn_xxx"\n  }\n}
+deactivate MayarAPI
+
+CheckoutAPI --> Page : 200 {\n  checkout_url: "https://mayar.id/pay/xxx",\n  transaction_id: "txn_xxx"\n}
+deactivate CheckoutAPI
+
+Page --> User : window.open(checkout_url)
+deactivate Page
+
+' ============================================================
+'  FASE 2: PAYMENT — User Melakukan Pembayaran
+' ============================================================
+
+== Fase 2: Payment — Proses Pembayaran di Mayar ==
+
+User -> MayarPage : Buka halaman checkout Mayar
+activate MayarPage
+MayarPage --> User : Tampilkan metode pembayaran:\n• QRIS\n• Transfer Bank (BCA/BNI/BRI/Mandiri)\n• e-Wallet (OVO/DANA/GoPay)
+
+User -> MayarPage : Pilih metode &\nlakukan pembayaran
+MayarPage -> MayarPage : Proses pembayaran
+deactivate MayarPage
+
+' ============================================================
+'  FASE 3: WEBHOOK — Notifikasi Pembayaran
+' ============================================================
+
+== Fase 3: Webhook — Notifikasi Otomatis dari Mayar ==
+
+MayarAPI -> WebhookAPI : POST /api/webhook/mayar\nHeaders: {\n  x-mayar-signature: hmac_sha256\n}\nBody: {\n  event: "payment.success",\n  data: {\n    id: "txn_xxx",\n    status: "paid",\n    amount: 49000,\n    customerEmail: "user@email.com",\n    ...\n  }\n}
+activate WebhookAPI
+
+WebhookAPI -> WebhookAPI : verifySignature(\n  payload,\n  signature,\n  MAYAR_WEBHOOK_SECRET\n)\n// crypto.timingSafeEqual(\n//   HMAC-SHA256 comparison\n// )
+
+alt Signature Valid
+
+  WebhookAPI -> SBService : createClient(\n  SUPABASE_URL,\n  SUPABASE_SERVICE_ROLE_KEY\n)
+  activate SBService
+
+  WebhookAPI -> DB : UPSERT INTO transactions\n(\n  id: "txn_xxx",\n  user_id: (lookup by email),\n  amount: 49000,\n  status: 'paid',\n  payment_provider: 'mayar',\n  customer_email,\n  paid_at: now(),\n  raw_payload: webhook_body\n)
+  activate DB
+  DB --> WebhookAPI : Transaction upserted
+  deactivate DB
+
+  WebhookAPI -> DB : UPDATE invitations\nSET\n  status = 'active',\n  is_premium = true,\n  activated_at = now()\nWHERE user_id = :user_id\n  AND status = 'draft'
+  activate DB
+  DB --> WebhookAPI : Invitation activated ✓
+  deactivate DB
+
+  deactivate SBService
+
+  WebhookAPI --> MayarAPI : 200 {received: true}
+
+  note over User, DB
+    Undangan sekarang berstatus **ACTIVE**
+    dan dapat diakses publik via slug URL
+  end note
+
+else Signature Invalid
+  WebhookAPI --> MayarAPI : 401 Unauthorized\n{error: "Invalid signature"}
+end
+
+deactivate WebhookAPI
+
+' ============================================================
+'  FASE 4: USER MELIHAT HASIL
+' ============================================================
+
+== Fase 4: User Melihat Hasil Aktivasi ==
+
+User -> Page : Refresh /dashboard/invitations
+activate Page
+Page -> CheckoutAPI : GET /api/invitations
+note right: Sebenarnya ke\n/api/invitations\nbukan /api/checkout
+CheckoutAPI -> DB : SELECT *, rsvps(count)\nFROM invitations\nWHERE user_id = :user_id
+DB --> CheckoutAPI : [invitations with\nupdated status]
+CheckoutAPI --> Page : {invitations[]}
+Page --> User : Status undangan berubah:\n**"Draft"** → **"Aktif"** ✓
+deactivate Page
+
+@enduml

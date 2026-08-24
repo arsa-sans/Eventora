@@ -1,0 +1,230 @@
+@startuml Eventora_Sequence_CRUD_Undangan
+' ============================================================
+'  EVENTORA — Sequence Diagram: CRUD Undangan
+'  Komponen: Browser, Pages, API Route, Supabase, Storage, DB
+' ============================================================
+
+skinparam sequence {
+  ArrowColor #047857
+  ActorBorderColor #059669
+  LifeLineBorderColor #059669
+  LifeLineBackgroundColor #ECFDF5
+  ParticipantBorderColor #059669
+  ParticipantBackgroundColor #ECFDF5
+  ParticipantFontColor #1E293B
+  BoxBorderColor #059669
+  BoxBackgroundColor #F0FDF4
+  DividerBackgroundColor #D1FAE5
+}
+skinparam defaultFontName Inter
+
+title Sequence Diagram — CRUD Undangan (Create, Read, Update, Delete)
+
+' ============================================================
+'  PARTICIPANTS
+' ============================================================
+
+actor "User\n(Browser)" as User
+box "Frontend (Next.js)" #F0FDF4
+  participant "NewInvitationPage\n(/invitations/new)" as NewPage <<Client Component>>
+  participant "EditInvitationPage\n(/invitations/[id]/edit)" as EditPage <<Client Component>>
+  participant "InvitationsPage\n(/invitations)" as ListPage <<Client Component>>
+end box
+box "Backend (Next.js API Routes)" #ECFDF5
+  participant "Upload API\n(/api/upload)" as UploadAPI <<API Route>>
+  participant "Invitations API\n(/api/invitations)" as InvAPI <<API Route>>
+end box
+box "Supabase" #D1FAE5
+  participant "Supabase Server\nClient" as SBServer <<SSR Client>>
+  participant "resolveMapUrl()\n(mapServer.ts)" as MapUtil <<Utility>>
+  database "PostgreSQL\nDatabase" as DB
+  database "Supabase\nStorage" as Storage
+end box
+
+' ============================================================
+'  CREATE — Membuat Undangan Baru
+' ============================================================
+
+== CREATE: Membuat Undangan Baru ==
+
+User -> NewPage : Akses /dashboard/invitations/new
+activate NewPage
+NewPage --> User : Render wizard form (5 steps)
+
+User -> NewPage : Step 1-2: Isi data\nmempelai & acara
+
+opt Upload Foto (Step 3)
+  User -> NewPage : Pilih file foto
+  NewPage -> UploadAPI : POST /api/upload\n(FormData: file)
+  activate UploadAPI
+
+  UploadAPI -> SBServer : createServerSupabaseClient()
+  activate SBServer
+  SBServer -> SBServer : auth.getUser()
+  SBServer --> UploadAPI : {user}
+  deactivate SBServer
+
+  UploadAPI -> UploadAPI : Validasi file:\n• Format: jpeg/png/webp/gif\n• Size: max 5MB
+
+  UploadAPI -> Storage : storage.from('invitation-images')\n.upload(\n  '{user_id}/{timestamp}-{random}.{ext}',\n  buffer\n)
+  activate Storage
+  Storage --> UploadAPI : Upload success
+  deactivate Storage
+
+  UploadAPI -> Storage : getPublicUrl(filePath)
+  Storage --> UploadAPI : publicUrl
+
+  UploadAPI --> NewPage : {url: publicUrl}
+  deactivate UploadAPI
+
+  NewPage --> User : Tampilkan preview foto
+end
+
+User -> NewPage : Step 4-5: Isi fitur &\npilih tema
+User -> NewPage : Klik "Buat Undangan"
+
+NewPage -> InvAPI : POST /api/invitations\n{\n  groom_name, bride_name,\n  event_date, event_location,\n  event_map_url, theme_id,\n  love_story, gallery_images,\n  bank_accounts, music_url, ...\n}
+activate InvAPI
+
+InvAPI -> SBServer : createServerSupabaseClient()
+activate SBServer
+SBServer -> SBServer : auth.getUser()
+SBServer --> InvAPI : {user}
+deactivate SBServer
+
+InvAPI -> InvAPI : Generate slug:\n{groom}-{bride}-{random(4)}
+
+opt Google Maps URL provided
+  InvAPI -> MapUtil : resolveMapUrl(event_map_url)
+  activate MapUtil
+  MapUtil -> MapUtil : HEAD request\nfollow redirects
+  MapUtil --> InvAPI : resolved full URL
+  deactivate MapUtil
+end
+
+InvAPI -> DB : INSERT INTO invitations\n(\n  user_id, slug, title,\n  event_type: 'wedding',\n  status: 'draft',\n  theme_id, groom_name, ...\n)
+activate DB
+DB --> InvAPI : {invitation record}
+deactivate DB
+
+InvAPI --> NewPage : 200 {invitation data}
+deactivate InvAPI
+
+NewPage --> User : Toast: "Undangan berhasil dibuat!"
+NewPage -> NewPage : router.push(\n  '/dashboard/invitations')
+deactivate NewPage
+
+' ============================================================
+'  READ — Melihat Daftar Undangan
+' ============================================================
+
+== READ: Melihat Daftar Undangan ==
+
+User -> ListPage : Akses /dashboard/invitations
+activate ListPage
+
+ListPage -> InvAPI : GET /api/invitations
+activate InvAPI
+
+InvAPI -> SBServer : createServerSupabaseClient()
+activate SBServer
+SBServer -> SBServer : auth.getUser()
+SBServer --> InvAPI : {user}
+deactivate SBServer
+
+InvAPI -> DB : SELECT *, rsvps(count)\nFROM invitations\nWHERE user_id = :user_id\nORDER BY created_at DESC
+activate DB
+DB --> InvAPI : [invitation records\n  with rsvp counts]
+deactivate DB
+
+InvAPI --> ListPage : 200 {invitations[]}
+deactivate InvAPI
+
+ListPage --> User : Render daftar undangan\n(status badges, action buttons)
+deactivate ListPage
+
+' ============================================================
+'  UPDATE — Mengedit Undangan
+' ============================================================
+
+== UPDATE: Mengedit Undangan ==
+
+User -> EditPage : Akses /dashboard/invitations/[id]/edit
+activate EditPage
+
+EditPage -> InvAPI : GET /api/invitations
+activate InvAPI
+InvAPI -> DB : SELECT FROM invitations\nWHERE user_id = :user_id
+activate DB
+DB --> InvAPI : [invitations]
+deactivate DB
+InvAPI --> EditPage : {invitations[]}
+deactivate InvAPI
+
+EditPage -> EditPage : Filter invitation by id\nfrom params
+EditPage --> User : Render form\npre-filled with data
+
+User -> EditPage : Edit data pada step mana saja
+User -> EditPage : Klik "Simpan"
+
+EditPage -> InvAPI : PUT /api/invitations\n{id, updated fields...}
+activate InvAPI
+
+InvAPI -> SBServer : createServerSupabaseClient()
+activate SBServer
+SBServer --> InvAPI : {user}
+deactivate SBServer
+
+opt Google Maps URL updated
+  InvAPI -> MapUtil : resolveMapUrl(newMapUrl)
+  MapUtil --> InvAPI : resolved URL
+end
+
+InvAPI -> DB : UPDATE invitations\nSET (updated fields),\n  updated_at = now()\nWHERE id = :id\n  AND user_id = :user_id
+activate DB
+DB --> InvAPI : {updated invitation}
+deactivate DB
+
+InvAPI --> EditPage : 200 {invitation data}
+deactivate InvAPI
+
+EditPage --> User : Toast: "Undangan berhasil diperbarui!"
+deactivate EditPage
+
+' ============================================================
+'  DELETE — Menghapus Undangan
+' ============================================================
+
+== DELETE: Menghapus Undangan ==
+
+User -> ListPage : Klik "Hapus" pada undangan
+activate ListPage
+ListPage --> User : Tampilkan ConfirmModal:\n"Yakin ingin menghapus?"
+
+User -> ListPage : Konfirmasi hapus
+
+ListPage -> InvAPI : DELETE /api/invitations\n{id}
+activate InvAPI
+
+InvAPI -> SBServer : createServerSupabaseClient()
+activate SBServer
+SBServer --> InvAPI : {user}
+deactivate SBServer
+
+InvAPI -> DB : DELETE FROM invitations\nWHERE id = :id\n  AND user_id = :user_id
+activate DB
+note right of DB
+  CASCADE: rsvps terkait
+  juga terhapus otomatis
+end note
+DB --> InvAPI : Delete success
+deactivate DB
+
+InvAPI --> ListPage : 200 {success: true}
+deactivate InvAPI
+
+ListPage -> ListPage : Refresh daftar undangan
+ListPage --> User : Toast: "Undangan berhasil dihapus!"
+deactivate ListPage
+
+@enduml

@@ -1,0 +1,153 @@
+@startuml Eventora_Sequence_Registrasi
+' ============================================================
+'  EVENTORA — Sequence Diagram: Registrasi User
+'  Komponen: Browser, Page, Supabase Client, Auth Server, Database
+' ============================================================
+
+skinparam sequence {
+  ArrowColor #047857
+  ActorBorderColor #059669
+  LifeLineBorderColor #059669
+  LifeLineBackgroundColor #ECFDF5
+  ParticipantBorderColor #059669
+  ParticipantBackgroundColor #ECFDF5
+  ParticipantFontColor #1E293B
+  BoxBorderColor #059669
+  BoxBackgroundColor #F0FDF4
+  DividerBackgroundColor #D1FAE5
+  GroupBorderColor #047857
+}
+skinparam defaultFontName Inter
+
+title Sequence Diagram — Registrasi User Baru
+
+' ============================================================
+'  PARTICIPANTS
+' ============================================================
+
+actor "User\n(Browser)" as User
+box "Frontend (Next.js)" #F0FDF4
+  participant "RegisterPage\n(/register)" as Page <<Client Component>>
+end box
+box "Backend (Next.js API)" #ECFDF5
+  participant "Middleware\n(middleware.ts)" as MW <<Edge Middleware>>
+  participant "Auth Callback\n(/api/auth/callback)" as Callback <<API Route>>
+end box
+box "Supabase" #D1FAE5
+  participant "Supabase Client\n(supabase.ts)" as SBClient <<Client SDK>>
+  participant "Supabase Auth\nServer" as SBAuth <<Auth Service>>
+  database "PostgreSQL\nDatabase" as DB
+end box
+
+' ============================================================
+'  ALT: EMAIL/PASSWORD vs GOOGLE OAUTH
+' ============================================================
+
+== Akses Halaman Register ==
+
+User -> MW : GET /register
+activate MW
+MW -> SBAuth : Refresh session cookies
+SBAuth --> MW : Session response
+
+alt User sudah login
+  MW --> User : 302 Redirect /dashboard
+else User belum login
+  MW --> Page : Lanjutkan ke RegisterPage
+end
+deactivate MW
+
+activate Page
+Page --> User : Render form registrasi
+
+alt Registrasi via Email & Password
+
+  == Registrasi Email/Password ==
+
+  User -> Page : Isi form:\n{full_name, email, password}
+  User -> Page : Klik "Daftar Sekarang"
+
+  Page -> SBClient : createClient()
+  activate SBClient
+  SBClient -> SBAuth : auth.signUp({\n  email, password,\n  options: {\n    data: {full_name},\n    emailRedirectTo: /api/auth/callback\n  }\n})
+  activate SBAuth
+
+  alt Registrasi Berhasil
+    SBAuth -> DB : INSERT INTO auth.users\n(email, encrypted_password,\n raw_user_meta_data)
+    activate DB
+    DB --> SBAuth : User created
+    DB -> DB : TRIGGER handle_new_user()\nINSERT INTO profiles\n(id, email, full_name, avatar_url)
+    deactivate DB
+
+    SBAuth --> SBClient : {user, session: null}\n(menunggu verifikasi email)
+    deactivate SBAuth
+    SBClient --> Page : Success response
+    deactivate SBClient
+
+    Page --> User : Tampilkan:\n"Cek email Anda\nuntuk verifikasi"
+
+    ... Beberapa saat kemudian ...
+
+    User -> SBAuth : Klik link verifikasi di email
+    SBAuth --> User : Redirect ke\n/api/auth/callback?code=xxx
+
+    User -> Callback : GET /api/auth/callback\n?code=xxx&redirectTo=/dashboard
+    activate Callback
+    Callback -> SBAuth : exchangeCodeForSession(code)
+    activate SBAuth
+    SBAuth --> Callback : {session, user}
+    deactivate SBAuth
+    Callback --> User : 302 Redirect /dashboard\n(Set session cookies)
+    deactivate Callback
+
+  else Registrasi Gagal (email sudah ada)
+    SBAuth --> SBClient : Error: email already registered
+    deactivate SBAuth
+    SBClient --> Page : Error response
+    deactivate SBClient
+    Page --> User : Toast error:\n"Email sudah terdaftar"
+  end
+
+else Registrasi via Google OAuth
+
+  == Registrasi Google OAuth ==
+
+  User -> Page : Klik "Daftar dengan Google"
+
+  Page -> SBClient : createClient()
+  activate SBClient
+  SBClient -> SBAuth : auth.signInWithOAuth({\n  provider: 'google',\n  options: {\n    redirectTo: /api/auth/callback\n  }\n})
+  activate SBAuth
+  SBAuth --> SBClient : {url: google_oauth_url}
+  deactivate SBAuth
+  SBClient --> Page : Google OAuth URL
+  deactivate SBClient
+
+  Page --> User : Redirect ke Google OAuth
+
+  User -> User : Login & izinkan akses\ndi Google
+
+  User -> Callback : GET /api/auth/callback\n?code=xxx
+  activate Callback
+  Callback -> SBAuth : exchangeCodeForSession(code)
+  activate SBAuth
+
+  SBAuth -> DB : INSERT INTO auth.users\n(jika user baru)
+  activate DB
+  DB -> DB : TRIGGER handle_new_user()\nINSERT INTO profiles
+  DB --> SBAuth : OK
+  deactivate DB
+
+  SBAuth --> Callback : {session, user}
+  deactivate SBAuth
+
+  Callback --> User : 302 Redirect /dashboard\n(Set session cookies)
+  deactivate Callback
+
+end
+
+deactivate Page
+
+User -> User : Masuk Dashboard ✓
+
+@enduml

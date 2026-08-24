@@ -1,0 +1,151 @@
+@startuml Eventora_Activity_Buat_Undangan
+' ============================================================
+'  EVENTORA — Activity Diagram: Membuat Undangan Baru
+'  Swimlane: User | System
+' ============================================================
+
+skinparam activity {
+  BackgroundColor #ECFDF5
+  BorderColor #059669
+  FontColor #1E293B
+  DiamondBackgroundColor #D1FAE5
+  DiamondBorderColor #059669
+}
+skinparam ArrowColor #047857
+skinparam defaultFontName Inter
+
+title Activity Diagram — Membuat Undangan Baru (5 Step Wizard)
+
+|#ECFDF5| **User** |
+|#D1FAE5| **Sistem Eventora** |
+
+|**User**|
+start
+:Klik **"Buat Undangan Baru"**\ndi Dashboard;
+
+|**Sistem Eventora**|
+:Middleware validasi sesi user;
+:Render form wizard 5 langkah;
+
+' ============================================================
+'  STEP 1: DATA MEMPELAI
+' ============================================================
+
+|**User**|
+:=== Step 1: Mempelai ===
+Mengisi data:
+• Nama Mempelai Pria
+• Nama Mempelai Wanita
+• Nama Ayah & Ibu (kedua pihak)
+• Pesan/Sambutan;
+:Klik **"Selanjutnya"**;
+
+' ============================================================
+'  STEP 2: DATA ACARA
+' ============================================================
+
+|**User**|
+:=== Step 2: Acara ===
+Mengisi data:
+• Tanggal Acara
+• Waktu Acara
+• Lokasi/Venue
+• URL Google Maps;
+:Klik **"Selanjutnya"**;
+
+' ============================================================
+'  STEP 3: CERITA & GALERI
+' ============================================================
+
+|**User**|
+:=== Step 3: Cerita & Galeri ===;
+
+if (Tambah Love Story?) then (Ya)
+  :Mengisi entri Love Story:\n• Tanggal\n• Judul\n• Deskripsi;
+  note right: Dapat menambah\nmultiple entri
+else (Tidak)
+endif
+
+if (Upload Foto?) then (Ya)
+  :Memilih file foto\n(JPEG/PNG/WebP/GIF, max 5MB);
+
+  |**Sistem Eventora**|
+  :POST /api/upload;
+  :Validasi format & ukuran file;
+
+  if (File valid?) then (Ya)
+    :Upload ke Supabase Storage\nbucket: invitation-images\npath: {user_id}/{timestamp}.{ext};
+    :Return public URL;
+
+    |**User**|
+    :Foto ditampilkan di preview galeri;
+  else (Tidak)
+    :Return error\n(format/ukuran tidak valid);
+
+    |**User**|
+    :Melihat pesan error;
+  endif
+else (Tidak)
+endif
+
+|**User**|
+:Klik **"Selanjutnya"**;
+
+' ============================================================
+'  STEP 4: FITUR
+' ============================================================
+
+|**User**|
+:=== Step 4: Fitur ===
+Mengisi (opsional):
+• URL Background Musik
+• Rekening Titip Hadiah:\n  - Nama Bank\n  - Nomor Rekening\n  - Nama Pemilik;
+note right: Dapat menambah\nmultiple rekening
+:Klik **"Selanjutnya"**;
+
+' ============================================================
+'  STEP 5: PILIH TEMA
+' ============================================================
+
+|**User**|
+:=== Step 5: Tema ===
+Memilih tema dari daftar:
+• Emerald Garden (Rp 49.000)
+• Rose Blush (Rp 49.000)
+• Midnight Noir (Rp 39.000)
+• Minimalist White (Rp 39.000);
+:Klik **"Buat Undangan"**;
+
+' ============================================================
+'  PROSES PENYIMPANAN
+' ============================================================
+
+|**Sistem Eventora**|
+:POST /api/invitations;
+:Validasi sesi user\n(supabase.auth.getUser);
+:Generate slug unik:\n{groom}-{bride}-{random};
+
+if (Ada Google Maps URL?) then (Ya)
+  :resolveMapUrl()\nResolve shortened URL;
+else (Tidak)
+endif
+
+:INSERT INTO invitations\n(status: 'draft');
+
+if (Simpan berhasil?) then (Ya)
+  :Return data undangan\ndengan slug & id;
+
+  |**User**|
+  :Toast sukses\n"Undangan berhasil dibuat!";
+  :Redirect ke\n**/dashboard/invitations**;
+  stop
+
+else (Gagal)
+  :Return error response;
+
+  |**User**|
+  :Toast error\n"Gagal membuat undangan";
+  stop
+endif
+
+@enduml

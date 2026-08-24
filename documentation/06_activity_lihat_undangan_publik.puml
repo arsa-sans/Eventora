@@ -1,0 +1,108 @@
+@startuml Eventora_Activity_Lihat_Undangan_Publik
+' ============================================================
+'  EVENTORA — Activity Diagram: Melihat Undangan Publik
+'  Swimlane: Tamu Undangan | Sistem Eventora
+' ============================================================
+
+skinparam activity {
+  BackgroundColor #ECFDF5
+  BorderColor #059669
+  FontColor #1E293B
+  DiamondBackgroundColor #D1FAE5
+  DiamondBorderColor #059669
+}
+skinparam ArrowColor #047857
+skinparam defaultFontName Inter
+
+title Activity Diagram — Melihat Undangan Publik
+
+|#ECFDF5| **Tamu Undangan** |
+|#D1FAE5| **Sistem Eventora** |
+
+' ============================================================
+'  FLOW
+' ============================================================
+
+|**Tamu Undangan**|
+start
+:Menerima link undangan\n(contoh: eventora.id/budi-ani-x7k9);
+
+:Membuka link di browser;
+
+|**Sistem Eventora**|
+:Server-Side Rendering (SSR)\n[slug]/page.tsx;
+
+:SELECT FROM invitations\nWHERE slug = :slug\n(via Supabase Service Role);
+
+if (Undangan ditemukan?) then (Ya)
+  if (Status undangan?) then (active)
+    :Parse query param\n?kepada= untuk\npersonalisasi greeting;
+    :getTheme(theme_id)\ndari themeRegistry;
+
+    if (Tema tersedia?) then (Ya)
+      :resolveMapUrl()\nResolve Google Maps URL\njika shortened;
+      :Generate metadata:\n• Title, Description\n• OpenGraph image;
+      :Render komponen tema\ndengan InvitationData;
+    else (Tidak)
+      :Render fallback\ncolor swatch palette;
+    endif
+
+    |**Tamu Undangan**|
+    :Melihat cover undangan\ndengan animasi pembuka;
+    :Klik **"Buka Undangan"**;
+    :Melihat konten undangan:;
+
+    fork
+      :Melihat data\nmempelai & keluarga;
+    fork again
+      :Melihat info acara\n(tanggal, waktu, lokasi);
+    fork again
+      :Melihat countdown\nhari-H (live timer);
+    fork again
+      :Melihat Love Story\ntimeline;
+    fork again
+      :Melihat galeri\nfoto prewedding;
+    end fork
+
+    if (Interaksi tambahan?) then (RSVP)
+      :Mengisi & mengirim\nform RSVP;
+    else (Salin Rekening)
+      :Klik **"Salin"**\nnomor rekening hadiah;
+
+      |**Sistem Eventora**|
+      :navigator.clipboard\n.writeText(nomorRekening);
+
+      |**Tamu Undangan**|
+      :Toast "Nomor rekening\ndisalin!";
+    else (Buka Maps)
+      :Klik **"Lihat Maps"**;
+      :Buka Google Maps\ndi tab baru;
+    else (Simpan Kalender)
+      :Klik **"Simpan Kalender"**;
+
+      |**Sistem Eventora**|
+      :Generate Google Calendar\nURL dengan event data;
+
+      |**Tamu Undangan**|
+      :Buka Google Calendar\ndengan event prefilled;
+    else (Tidak ada)
+    endif
+    stop
+
+  else (draft)
+    :Render **DraftBlockedPage**\nrobots: noindex;
+
+    |**Tamu Undangan**|
+    :Melihat pesan:\n"Undangan belum diaktifkan\noleh pemilik";
+    stop
+  endif
+
+else (Tidak)
+  :Return 404 Not Found\n(notFound());
+
+  |**Tamu Undangan**|
+  :Melihat halaman 404;
+  stop
+endif
+
+@enduml

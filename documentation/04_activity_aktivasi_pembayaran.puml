@@ -1,0 +1,104 @@
+@startuml Eventora_Activity_Aktivasi_Pembayaran
+' ============================================================
+'  EVENTORA — Activity Diagram: Aktivasi Undangan (Pembayaran)
+'  Swimlane: User | Sistem Eventora | Mayar Payment Gateway
+' ============================================================
+
+skinparam activity {
+  BackgroundColor #ECFDF5
+  BorderColor #059669
+  FontColor #1E293B
+  DiamondBackgroundColor #D1FAE5
+  DiamondBorderColor #059669
+}
+skinparam ArrowColor #047857
+skinparam defaultFontName Inter
+
+title Activity Diagram — Aktivasi Undangan via Pembayaran Mayar
+
+|#ECFDF5| **User** |
+|#D1FAE5| **Sistem Eventora** |
+|#FFF1F2| **Mayar Payment Gateway** |
+
+' ============================================================
+'  FLOW
+' ============================================================
+
+|**User**|
+start
+:Membuka halaman\n**/dashboard/invitations**;
+
+|**Sistem Eventora**|
+:GET /api/invitations\nFetch daftar undangan user;
+:Tampilkan daftar undangan\ndengan status (Draft/Aktif);
+
+|**User**|
+:Melihat undangan\nberstatus **"Draft"**;
+:Klik tombol **"Aktifkan"**;
+:Modal konfirmasi muncul\n(menampilkan harga tema);
+:Konfirmasi pembayaran;
+
+|**Sistem Eventora**|
+:POST /api/checkout\n{template_id};
+:Validasi sesi user\n(supabase.auth.getUser);
+:Lookup harga tema dari\ntemplatesData;
+:Kirim request ke Mayar API:\nPOST /hl/v1/invoice/create\n{name, amount, email,\n description, expiredAt: 24h};
+
+|**Mayar Payment Gateway**|
+:Terima request invoice;
+:Buat invoice pembayaran;
+:Return {checkout_url,\ntransaction_id};
+
+|**Sistem Eventora**|
+:Return checkout_url\nke client;
+
+|**User**|
+:Redirect ke halaman\npembayaran Mayar;
+
+|**Mayar Payment Gateway**|
+:Tampilkan halaman checkout\n(QRIS, Transfer Bank,\n e-Wallet, dll);
+
+|**User**|
+:Memilih metode pembayaran;
+:Melakukan pembayaran;
+
+|**Mayar Payment Gateway**|
+if (Pembayaran berhasil?) then (Ya)
+  :Status: **payment.success**;
+  :POST webhook ke\n/api/webhook/mayar\n(dengan HMAC signature);
+
+  |**Sistem Eventora**|
+  :Terima webhook POST;
+  :verifySignature()\nValidasi HMAC SHA-256;
+
+  if (Signature valid?) then (Ya)
+    :UPSERT INTO transactions\n(status: 'paid', paid_at);
+    :UPDATE invitations SET\nstatus = 'active'\nis_premium = true\nactivated_at = now();
+
+    |**User**|
+    :Refresh halaman invitations;
+    :Melihat status undangan\nberubah menjadi **"Aktif"**;
+    :Undangan dapat diakses\npublik via slug URL;
+    stop
+
+  else (Tidak Valid)
+    :Log error:\nInvalid webhook signature;
+    :Return 401 Unauthorized;
+    stop
+  endif
+
+else (Gagal/Expired)
+  :Status: **payment.failed**\natau **payment.expired**;
+  :POST webhook ke\n/api/webhook/mayar;
+
+  |**Sistem Eventora**|
+  :verifySignature();
+  :UPSERT INTO transactions\n(status: 'failed'/'expired');
+
+  |**User**|
+  :Undangan tetap berstatus\n**"Draft"**;
+  :Dapat mencoba\npembayaran ulang;
+  stop
+endif
+
+@enduml

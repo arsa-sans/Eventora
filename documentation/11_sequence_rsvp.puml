@@ -1,0 +1,163 @@
+@startuml Eventora_Sequence_RSVP
+' ============================================================
+'  EVENTORA — Sequence Diagram: Mengirim & Melihat RSVP
+'  Komponen: Browser, Theme Component, API Route, DB
+' ============================================================
+
+skinparam sequence {
+  ArrowColor #047857
+  ActorBorderColor #059669
+  LifeLineBorderColor #059669
+  LifeLineBackgroundColor #ECFDF5
+  ParticipantBorderColor #059669
+  ParticipantBackgroundColor #ECFDF5
+  ParticipantFontColor #1E293B
+  BoxBorderColor #059669
+  BoxBackgroundColor #F0FDF4
+  DividerBackgroundColor #D1FAE5
+}
+skinparam defaultFontName Inter
+
+title Sequence Diagram — Mengirim & Melihat RSVP
+
+' ============================================================
+'  PARTICIPANTS
+' ============================================================
+
+actor "Tamu\nUndangan" as Guest
+actor "Pengguna\n(Pemilik)" as Owner
+box "Frontend (Next.js)" #F0FDF4
+  participant "Theme Component\n(EmeraldGarden/\nRoseBlush/etc.)" as Theme <<Client Component>>
+  participant "RSVP Dashboard\n(/dashboard/rsvp)" as RSVPPage <<Client Component>>
+end box
+box "Backend (Next.js API)" #ECFDF5
+  participant "RSVP API\n(/api/rsvp)" as RSVPAPI <<API Route>>
+end box
+box "Supabase" #D1FAE5
+  participant "Supabase Service\nRole Client" as SBService <<Service Role>>
+  database "PostgreSQL\nDatabase" as DB
+end box
+
+' ============================================================
+'  FLOW 1: FETCH EXISTING RSVP/WISHES
+' ============================================================
+
+== Fetch Daftar Ucapan Tamu (saat buka undangan) ==
+
+Guest -> Theme : Klik "Buka Undangan"
+activate Theme
+
+Theme -> RSVPAPI : GET /api/rsvp\n?invitation_id=:uuid
+activate RSVPAPI
+
+RSVPAPI -> RSVPAPI : Validasi invitation_id\n(required, UUID format)
+
+RSVPAPI -> SBService : createClient(\n  SUPABASE_URL,\n  SERVICE_ROLE_KEY\n)
+activate SBService
+
+RSVPAPI -> DB : SELECT status FROM invitations\nWHERE id = :invitation_id
+activate DB
+DB --> RSVPAPI : {status: 'active'}
+deactivate DB
+
+alt Undangan Active
+  RSVPAPI -> DB : SELECT * FROM rsvps\nWHERE invitation_id = :id\nORDER BY created_at DESC
+  activate DB
+  DB --> RSVPAPI : [rsvp records]
+  deactivate DB
+
+  deactivate SBService
+
+  RSVPAPI --> Theme : 200 {data: [\n  {guest_name, attendance,\n   message, created_at},\n  ...\n]}
+  deactivate RSVPAPI
+
+  Theme -> Theme : setState(wishes)\nRender daftar ucapan tamu
+  Theme --> Guest : Tampilkan ucapan-ucapan\ntamu sebelumnya
+
+else Undangan Tidak Active
+  RSVPAPI --> Theme : 403 {error:\n  "Undangan belum aktif"}
+  Theme --> Guest : Tidak menampilkan\nform RSVP
+end
+
+' ============================================================
+'  FLOW 2: SUBMIT RSVP
+' ============================================================
+
+== Submit RSVP & Ucapan Baru ==
+
+Guest -> Theme : Mengisi form RSVP:\n• Nama: "Budi Santoso"\n• Kehadiran: "Hadir"\n• Ucapan: "Selamat ya!"
+Guest -> Theme : Klik "Kirim RSVP"
+
+Theme -> Theme : setState(rsvpLoading: true)
+
+Theme -> RSVPAPI : POST /api/rsvp\n{\n  invitation_id: ":uuid",\n  guest_name: "Budi Santoso",\n  attendance: "yes",\n  message: "Selamat ya!"\n}
+activate RSVPAPI
+
+RSVPAPI -> RSVPAPI : Validasi input:\n• invitation_id: required\n• guest_name: required (trim)\n• attendance ∈ ['yes','no','maybe']\n• message: optional\n• pax: optional (default 1)
+
+alt Input Valid
+  RSVPAPI -> SBService : createClient()
+  activate SBService
+
+  RSVPAPI -> DB : SELECT status FROM invitations\nWHERE id = :invitation_id
+  activate DB
+  DB --> RSVPAPI : {status: 'active'}
+  deactivate DB
+
+  alt Undangan Active
+    RSVPAPI -> DB : INSERT INTO rsvps (\n  invitation_id,\n  guest_name: 'Budi Santoso',\n  attendance: 'yes',\n  message: 'Selamat ya!',\n  pax: 1\n)
+    activate DB
+    DB --> RSVPAPI : {rsvp record}
+    deactivate DB
+
+    deactivate SBService
+
+    RSVPAPI --> Theme : 200 {\n  success: true,\n  data: {rsvp record}\n}
+    deactivate RSVPAPI
+
+    Theme -> Theme : setState(\n  rsvpSent: true,\n  wishes: [...wishes,\n    {name, msg, attend}]\n)
+    Theme --> Guest : Toast: "RSVP berhasil dikirim!"\nUcapan muncul di daftar
+
+  else Undangan Tidak Active
+    RSVPAPI --> Theme : 403 {error:\n  "Undangan belum aktif,\n   tidak bisa menerima RSVP"}
+    Theme --> Guest : Toast error
+  end
+
+else Input Tidak Valid
+  RSVPAPI --> Theme : 400 {error:\n  "Data tidak lengkap"}
+  deactivate RSVPAPI
+  Theme --> Guest : Toast error:\n"Lengkapi data RSVP"
+end
+
+deactivate Theme
+
+' ============================================================
+'  FLOW 3: OWNER MELIHAT DATA RSVP DI DASHBOARD
+' ============================================================
+
+== Pemilik Melihat Data RSVP di Dashboard ==
+
+Owner -> RSVPPage : Akses /dashboard/rsvp
+activate RSVPPage
+
+RSVPPage -> RSVPAPI : GET /api/invitations
+note right: Fetch daftar undangan\nuntuk dropdown selector
+RSVPAPI --> RSVPPage : {invitations[]}
+
+Owner -> RSVPPage : Pilih undangan\ndari dropdown
+
+RSVPPage -> RSVPAPI : GET /api/rsvp\n?invitation_id=:selected_id
+activate RSVPAPI
+RSVPAPI -> DB : SELECT * FROM rsvps\nWHERE invitation_id = :id\nORDER BY created_at DESC
+activate DB
+DB --> RSVPAPI : [rsvp records]
+deactivate DB
+RSVPAPI --> RSVPPage : 200 {data: [rsvps]}
+deactivate RSVPAPI
+
+RSVPPage -> RSVPPage : Hitung statistik:\n• Total RSVP\n• Hadir (+ total pax)\n• Tidak Hadir\n• Ragu-ragu
+
+RSVPPage --> Owner : Tampilkan:\n• Summary cards (statistik)\n• Tabel detail RSVP\n  (nama, status, pesan, waktu)
+deactivate RSVPPage
+
+@enduml

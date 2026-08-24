@@ -1,0 +1,200 @@
+@startuml Eventora_ERD
+' ============================================================
+'  EVENTORA — Entity Relationship Diagram (ERD)
+'  Database: PostgreSQL (Supabase)
+' ============================================================
+
+skinparam entity {
+  BackgroundColor #ECFDF5
+  BorderColor #059669
+  FontColor #1E293B
+}
+skinparam ArrowColor #047857
+skinparam defaultFontName Inter
+
+hide circle
+
+' ============================================================
+'  ENTITAS
+' ============================================================
+
+entity "**auth.users**" as auth_users {
+  * id : uuid <<PK>>
+  --
+  email : text
+  encrypted_password : text
+  raw_user_meta_data : jsonb
+  created_at : timestamptz
+  ..Dikelola oleh Supabase Auth..
+}
+
+entity "**profiles**" as profiles {
+  * id : uuid <<PK>> <<FK auth.users.id>>
+  --
+  email : text <<NOT NULL>>
+  full_name : text
+  avatar_url : text
+  last_payment_at : timestamptz
+  created_at : timestamptz <<DEFAULT now()>>
+}
+
+entity "**themes**" as themes {
+  * id : text <<PK>>
+  --
+  name : text <<NOT NULL>>
+  category : text <<NOT NULL>>
+  is_premium : boolean <<DEFAULT false>>
+  price : numeric <<DEFAULT 0>>
+  preview_image_url : text
+  css_variables : jsonb
+  created_at : timestamptz <<DEFAULT now()>>
+}
+
+entity "**invitations**" as invitations {
+  * id : uuid <<PK>> <<DEFAULT gen_random_uuid()>>
+  --
+  # user_id : uuid <<FK profiles.id>> <<NOT NULL>>
+  # theme_id : text <<DEFAULT 'emerald-garden'>> <<NOT NULL>>
+  slug : text <<UNIQUE>> <<NOT NULL>>
+  title : text <<DEFAULT 'Undangan Saya'>>
+  event_type : text <<DEFAULT 'wedding'>>
+  status : text <<DEFAULT 'draft'>>
+  is_premium : boolean <<DEFAULT false>>
+  activated_at : timestamptz
+  --
+  ..Data Mempelai..
+  groom_name : text
+  bride_name : text
+  host_name : text
+  groom_father : text
+  groom_mother : text
+  bride_father : text
+  bride_mother : text
+  groom_photo : text
+  bride_photo : text
+  cover_photo : text
+  --
+  ..Data Acara..
+  events : jsonb <<DEFAULT '[]'>>
+  event_date : timestamptz
+  event_time : text
+  event_location : text
+  event_map_url : text
+  --
+  ..Konten..
+  message : text
+  love_story : jsonb <<DEFAULT '[]'>>
+  gallery_images : text[] <<DEFAULT '{}'>>
+  bank_accounts : jsonb <<DEFAULT '[]'>>
+  --
+  ..Fitur..
+  music_url : text
+  streaming_url : text
+  custom_font : text
+  custom_colors : jsonb
+  auto_scroll : boolean <<DEFAULT false>>
+  --
+  created_at : timestamptz <<DEFAULT now()>>
+  updated_at : timestamptz <<DEFAULT now()>>
+}
+
+entity "**rsvps**" as rsvps {
+  * id : uuid <<PK>> <<DEFAULT gen_random_uuid()>>
+  --
+  # invitation_id : uuid <<FK invitations.id>> <<NOT NULL>>
+  guest_name : text <<NOT NULL>>
+  attendance : text <<NOT NULL>>
+  message : text
+  pax : integer <<DEFAULT 1>>
+  created_at : timestamptz <<DEFAULT now()>>
+}
+
+entity "**transactions**" as transactions {
+  * id : text <<PK>>
+  --
+  # user_id : uuid <<FK profiles.id>> <<NOT NULL>>
+  # invitation_id : uuid <<FK invitations.id>>
+  amount : numeric <<NOT NULL>> <<DEFAULT 0>>
+  status : text <<DEFAULT 'pending'>>
+  payment_provider : text <<DEFAULT 'mayar'>>
+  customer_email : text
+  customer_name : text
+  paid_at : timestamptz
+  raw_payload : jsonb
+  created_at : timestamptz <<DEFAULT now()>>
+}
+
+entity "**storage.objects**\n(invitation-images)" as storage {
+  * id : uuid <<PK>>
+  --
+  bucket_id : text <<'invitation-images'>>
+  name : text
+  owner : uuid
+  ..Dikelola oleh Supabase Storage..
+}
+
+' ============================================================
+'  RELASI ANTAR ENTITAS
+' ============================================================
+
+' auth.users -> profiles (1:1, trigger handle_new_user)
+auth_users ||--|| profiles : "ON INSERT\ntrigger:\nhandle_new_user()"
+
+' profiles -> invitations (1:N)
+profiles ||--o{ invitations : "user_id\nON DELETE CASCADE"
+
+' themes -> invitations (1:N, logical)
+themes ||--o{ invitations : "theme_id"
+
+' invitations -> rsvps (1:N)
+invitations ||--o{ rsvps : "invitation_id\nON DELETE CASCADE"
+
+' profiles -> transactions (1:N)
+profiles ||--o{ transactions : "user_id\nON DELETE CASCADE"
+
+' invitations -> transactions (1:0..N)
+invitations ||--o{ transactions : "invitation_id\nON DELETE SET NULL"
+
+' profiles -> storage (1:N, logical via folder)
+profiles ||--o{ storage : "owner\n(folder: user_id/)"
+
+' ============================================================
+'  CATATAN
+' ============================================================
+
+note bottom of invitations
+  **Status Values:**
+  • draft — Belum dibayar
+  • active — Sudah dibayar & aktif
+  • expired — Masa aktif habis
+
+  **Attendance Values (rsvps):**
+  • yes — Hadir
+  • no — Tidak Hadir
+  • maybe — Ragu-ragu
+
+  **Transaction Status:**
+  • pending — Menunggu pembayaran
+  • paid — Pembayaran berhasil
+  • failed — Pembayaran gagal
+  • expired — Invoice kedaluwarsa
+end note
+
+note bottom of auth_users
+  Tabel ini dikelola sepenuhnya
+  oleh **Supabase Auth**.
+  Profile dibuat otomatis via
+  **trigger handle_new_user()**
+  saat user baru mendaftar.
+end note
+
+note right of storage
+  **Bucket:** invitation-images
+  **Akses:** Public read
+  **Upload:** Authenticated users
+  **Path:** {user_id}/{timestamp}-{random}.{ext}
+  **Max Size:** 5MB
+  **Format:** JPEG, PNG, WebP, GIF
+end note
+
+@enduml

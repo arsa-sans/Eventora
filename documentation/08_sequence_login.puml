@@ -1,0 +1,143 @@
+@startuml Eventora_Sequence_Login
+' ============================================================
+'  EVENTORA — Sequence Diagram: Login User
+'  Komponen: Browser, Page, Middleware, Supabase Client, Auth, DB
+' ============================================================
+
+skinparam sequence {
+  ArrowColor #047857
+  ActorBorderColor #059669
+  LifeLineBorderColor #059669
+  LifeLineBackgroundColor #ECFDF5
+  ParticipantBorderColor #059669
+  ParticipantBackgroundColor #ECFDF5
+  ParticipantFontColor #1E293B
+  BoxBorderColor #059669
+  BoxBackgroundColor #F0FDF4
+  DividerBackgroundColor #D1FAE5
+}
+skinparam defaultFontName Inter
+
+title Sequence Diagram — Login User
+
+' ============================================================
+'  PARTICIPANTS
+' ============================================================
+
+actor "User\n(Browser)" as User
+box "Frontend (Next.js)" #F0FDF4
+  participant "LoginPage\n(/login)" as Page <<Client Component>>
+end box
+box "Backend (Next.js API)" #ECFDF5
+  participant "Middleware\n(middleware.ts)" as MW <<Edge Middleware>>
+  participant "Auth Callback\n(/api/auth/callback)" as Callback <<API Route>>
+end box
+box "Supabase" #D1FAE5
+  participant "Supabase Client\n(supabase.ts)" as SBClient <<Client SDK>>
+  participant "Supabase Auth\nServer" as SBAuth <<Auth Service>>
+  database "PostgreSQL\nDatabase" as DB
+end box
+
+' ============================================================
+'  FLOW
+' ============================================================
+
+== Akses Halaman Login ==
+
+User -> MW : GET /login
+activate MW
+MW -> SBAuth : createServerClient()\nRefresh session cookies
+SBAuth --> MW : Session response
+
+alt User sudah login
+  MW --> User : 302 Redirect /dashboard
+else User belum login
+  MW --> Page : Lanjutkan ke LoginPage
+end
+deactivate MW
+
+activate Page
+Page --> User : Render form login
+
+alt Login via Email & Password
+
+  == Login Email/Password ==
+
+  User -> Page : Isi form:\n{email, password}
+  User -> Page : Klik "Masuk"
+
+  Page -> SBClient : createClient()
+  activate SBClient
+  SBClient -> SBAuth : auth.signInWithPassword({\n  email,\n  password\n})
+  activate SBAuth
+
+  alt Kredensial Valid
+    SBAuth -> DB : SELECT FROM auth.users\nWHERE email = :email
+    activate DB
+    DB --> SBAuth : User record
+    deactivate DB
+    SBAuth -> SBAuth : Verifikasi password hash
+    SBAuth --> SBClient : {session, user}
+    deactivate SBAuth
+    SBClient --> Page : Login success
+    deactivate SBClient
+
+    Page -> Page : router.push('/dashboard')
+    Page --> User : Redirect ke /dashboard
+
+  else Kredensial Invalid
+    SBAuth --> SBClient : Error: Invalid credentials
+    deactivate SBAuth
+    SBClient --> Page : Error response
+    deactivate SBClient
+    Page --> User : Toast error:\n"Email atau password salah"
+
+  else Email Belum Diverifikasi
+    SBAuth --> SBClient : Error: Email not confirmed
+    deactivate SBAuth
+    SBClient --> Page : Error response
+    deactivate SBClient
+    Page --> User : Toast error:\n"Verifikasi email Anda\nterlebih dahulu"
+  end
+
+else Login via Google OAuth
+
+  == Login Google OAuth ==
+
+  User -> Page : Klik "Masuk dengan Google"
+
+  Page -> SBClient : createClient()
+  activate SBClient
+  SBClient -> SBAuth : auth.signInWithOAuth({\n  provider: 'google',\n  options: {\n    redirectTo:\n    origin + '/api/auth/callback'\n  }\n})
+  activate SBAuth
+  SBAuth --> SBClient : {url: google_oauth_url}
+  deactivate SBAuth
+  SBClient --> Page : OAuth redirect URL
+  deactivate SBClient
+
+  Page --> User : window.location.href =\ngoogle_oauth_url
+
+  User -> User : Login & izinkan akses\ndi halaman Google
+
+  User -> Callback : GET /api/auth/callback\n?code=xxx&redirectTo=/dashboard
+  activate Callback
+
+  Callback -> SBAuth : createServerSupabaseClient()\nexchangeCodeForSession(code)
+  activate SBAuth
+  SBAuth -> DB : Validate & create/update\nsession
+  activate DB
+  DB --> SBAuth : OK
+  deactivate DB
+  SBAuth --> Callback : {session, user}
+  deactivate SBAuth
+
+  Callback --> User : 302 Redirect /dashboard\n(Set auth cookies via\nSet-Cookie header)
+  deactivate Callback
+
+end
+
+deactivate Page
+
+User -> User : Masuk Dashboard ✓
+
+@enduml

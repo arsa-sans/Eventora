@@ -1,0 +1,101 @@
+@startuml Eventora_Activity_Kirim_RSVP
+' ============================================================
+'  EVENTORA — Activity Diagram: Mengirim RSVP & Ucapan
+'  Swimlane: Tamu Undangan | Sistem Eventora
+' ============================================================
+
+skinparam activity {
+  BackgroundColor #ECFDF5
+  BorderColor #059669
+  FontColor #1E293B
+  DiamondBackgroundColor #D1FAE5
+  DiamondBorderColor #059669
+}
+skinparam ArrowColor #047857
+skinparam defaultFontName Inter
+
+title Activity Diagram — Mengirim RSVP & Ucapan Tamu
+
+|#ECFDF5| **Tamu Undangan** |
+|#D1FAE5| **Sistem Eventora** |
+
+' ============================================================
+'  FLOW
+' ============================================================
+
+|**Tamu Undangan**|
+start
+:Membuka link undangan\n(/{slug}?kepada=Nama+Tamu);
+
+|**Sistem Eventora**|
+:SELECT FROM invitations\nWHERE slug = :slug;
+
+if (Undangan ditemukan?) then (Ya)
+  if (Status = 'active'?) then (Ya)
+    :Render tema undangan\ndengan data InvitationData;
+    :Parse query param\n?kepada= untuk\npersonalisasi nama tamu;
+  else (Draft)
+    :Render halaman\n**DraftBlockedPage**\n"Undangan belum diaktifkan";
+
+    |**Tamu Undangan**|
+    :Melihat pesan\nundangan belum aktif;
+    stop
+  endif
+else (Tidak)
+  :Return 404 Not Found;
+
+  |**Tamu Undangan**|
+  :Melihat halaman 404;
+  stop
+endif
+
+|**Tamu Undangan**|
+:Melihat cover undangan;
+:Klik tombol\n**"Buka Undangan"**;
+
+|**Sistem Eventora**|
+:GET /api/rsvp\n?invitation_id=:id;
+:Verifikasi status = 'active';
+:SELECT FROM rsvps\nWHERE invitation_id = :id\nORDER BY created_at DESC;
+:Return daftar ucapan tamu;
+
+|**Tamu Undangan**|
+:Melihat seluruh konten:\n• Data Mempelai\n• Informasi Acara\n• Countdown Hari-H\n• Love Story\n• Galeri Foto\n• Daftar Ucapan Tamu;
+
+:Scroll ke form RSVP;
+:Mengisi form RSVP:\n• Nama Tamu\n• Kehadiran (Ya/Tidak/Mungkin)\n• Pesan/Ucapan;
+:Klik tombol **"Kirim RSVP"**;
+
+|**Sistem Eventora**|
+:POST /api/rsvp\n{invitation_id, guest_name,\n attendance, message};
+:Validasi input:\n• invitation_id required\n• guest_name required\n• attendance ∈ {yes, no, maybe};
+
+if (Input valid?) then (Ya)
+  :Verifikasi undangan\nstatus = 'active';
+
+  if (Undangan aktif?) then (Ya)
+    :INSERT INTO rsvps\n(invitation_id, guest_name,\n attendance, message, pax);
+    :Return {success: true};
+
+    |**Tamu Undangan**|
+    :Toast sukses\n"RSVP berhasil dikirim!";
+    :Ucapan baru muncul\ndi daftar ucapan tamu;
+    stop
+
+  else (Tidak Aktif)
+    :Return error\n"Undangan belum aktif";
+
+    |**Tamu Undangan**|
+    :Toast error;
+    stop
+  endif
+
+else (Tidak Valid)
+  :Return 400 Bad Request\n"Data tidak lengkap";
+
+  |**Tamu Undangan**|
+  :Toast error\n"Lengkapi data RSVP";
+  stop
+endif
+
+@enduml

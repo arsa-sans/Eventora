@@ -1,0 +1,113 @@
+@startuml Eventora_Activity_Registrasi_Login
+' ============================================================
+'  EVENTORA — Activity Diagram: Registrasi & Login
+'  Swimlane: User | System
+' ============================================================
+
+skinparam activity {
+  BackgroundColor #ECFDF5
+  BorderColor #059669
+  FontColor #1E293B
+  DiamondBackgroundColor #D1FAE5
+  DiamondBorderColor #059669
+}
+skinparam ArrowColor #047857
+skinparam defaultFontName Inter
+
+title Activity Diagram — Registrasi & Login User
+
+|#ECFDF5| **User** |
+|#D1FAE5| **Sistem Eventora** |
+
+' ============================================================
+'  FLOW UTAMA: REGISTRASI
+' ============================================================
+
+|**User**|
+start
+:Mengakses halaman **/register**;
+
+|**Sistem Eventora**|
+:Middleware memeriksa sesi aktif;
+
+if (Sudah login?) then (Ya)
+  :Redirect ke **/dashboard**;
+  stop
+else (Tidak)
+endif
+
+|**User**|
+:Melihat form registrasi;
+
+if (Metode registrasi?) then (Email & Password)
+
+  :Mengisi form:\n- Nama Lengkap\n- Email\n- Password (min 6 karakter);
+  :Klik tombol **"Daftar Sekarang"**;
+
+  |**Sistem Eventora**|
+  :supabase.auth.signUp(\n  {email, password,\n   data: {full_name}});
+
+  if (Registrasi berhasil?) then (Ya)
+    :Trigger **handle_new_user()**\nINSERT INTO profiles;
+    :Kirim email verifikasi\nke alamat user;
+
+    |**User**|
+    :Melihat pesan\n"Cek email untuk verifikasi";
+    :Membuka email\ndan klik link verifikasi;
+
+    |**Sistem Eventora**|
+    :GET /api/auth/callback\nexchangeCodeForSession(code);
+    :Membuat sesi autentikasi;
+    :Redirect ke **/dashboard**;
+
+    |**User**|
+    :Masuk ke Dashboard;
+    stop
+
+  else (Gagal)
+    :Tampilkan pesan error\n(email sudah terdaftar, dll.);
+
+    |**User**|
+    :Melihat pesan error;
+    stop
+  endif
+
+else (Google OAuth)
+
+  :Klik tombol\n**"Daftar dengan Google"**;
+
+  |**Sistem Eventora**|
+  :supabase.auth.signInWithOAuth(\n  {provider: 'google'});
+  :Redirect ke halaman\nGoogle OAuth Consent;
+
+  |**User**|
+  :Login dengan akun Google\ndan berikan izin;
+
+  |**Sistem Eventora**|
+  :Google callback ke\n/api/auth/callback;
+  :exchangeCodeForSession(code);
+  :Trigger **handle_new_user()**\n(jika user baru)\nINSERT INTO profiles;
+  :Membuat sesi autentikasi;
+  :Redirect ke **/dashboard**;
+
+  |**User**|
+  :Masuk ke Dashboard;
+  stop
+
+endif
+
+' ============================================================
+'  NOTE
+' ============================================================
+
+legend right
+  **Catatan:**
+  • Middleware melindungi halaman /register
+    agar user yang sudah login di-redirect
+  • Registrasi email memerlukan verifikasi
+  • Google OAuth langsung terverifikasi
+  • Trigger handle_new_user() otomatis
+    membuat profil di tabel profiles
+end legend
+
+@enduml

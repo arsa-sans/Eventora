@@ -1,0 +1,131 @@
+@startuml Eventora_Sequence_Lihat_Undangan
+' ============================================================
+'  EVENTORA — Sequence Diagram: Melihat Undangan Publik
+'  Komponen: Browser, SSR Page, Theme Component, API, DB
+' ============================================================
+
+skinparam sequence {
+  ArrowColor #047857
+  ActorBorderColor #059669
+  LifeLineBorderColor #059669
+  LifeLineBackgroundColor #ECFDF5
+  ParticipantBorderColor #059669
+  ParticipantBackgroundColor #ECFDF5
+  ParticipantFontColor #1E293B
+  BoxBorderColor #059669
+  BoxBackgroundColor #F0FDF4
+  DividerBackgroundColor #D1FAE5
+}
+skinparam defaultFontName Inter
+
+title Sequence Diagram — Melihat Undangan Publik (/{slug})
+
+' ============================================================
+'  PARTICIPANTS
+' ============================================================
+
+actor "Tamu\nUndangan" as Guest
+box "Frontend (Next.js)" #F0FDF4
+  participant "SSR Page\n(/[slug]/page.tsx)" as SSRPage <<Server Component>>
+  participant "Theme Component\n(EmeraldGarden/\nRoseBlush/etc.)" as Theme <<Client Component>>
+end box
+box "Backend (Next.js)" #ECFDF5
+  participant "Middleware\n(middleware.ts)" as MW <<Edge Middleware>>
+  participant "themeRegistry\n(themeRegistry.ts)" as Registry <<Module>>
+  participant "resolveMapUrl()\n(mapServer.ts)" as MapUtil <<Utility>>
+  participant "toEmbedMapUrl()\n(mapUtils.ts)" as MapEmbed <<Utility>>
+end box
+box "Supabase" #D1FAE5
+  participant "Supabase Service\nRole Client" as SBService <<Service Role>>
+  database "PostgreSQL\nDatabase" as DB
+end box
+
+' ============================================================
+'  FLOW: SERVER-SIDE RENDERING
+' ============================================================
+
+== Server-Side Rendering ==
+
+Guest -> MW : GET /{slug}?kepada=Budi+Santoso
+activate MW
+MW -> MW : Route /{slug} tidak cocok\ndengan /dashboard/* matcher\n→ Pass through tanpa auth check
+MW --> SSRPage : Lanjutkan request
+deactivate MW
+
+activate SSRPage
+
+SSRPage -> SSRPage : generateMetadata()\n(parallel with page render)
+
+SSRPage -> SBService : createClient(\n  SUPABASE_URL,\n  SERVICE_ROLE_KEY\n)
+activate SBService
+
+SSRPage -> DB : SELECT * FROM invitations\nWHERE slug = :slug\nLIMIT 1
+activate DB
+DB --> SSRPage : {invitation record}
+deactivate DB
+
+deactivate SBService
+
+alt Undangan Tidak Ditemukan
+  SSRPage -> SSRPage : notFound()
+  SSRPage --> Guest : 404 Not Found Page
+  
+else Status = 'draft'
+  SSRPage --> Guest : Render DraftBlockedPage:\n"Undangan ini belum diaktifkan\noleh pemiliknya"\n(robots: noindex)
+
+else Status = 'active'
+  SSRPage -> SSRPage : Parse query param\n?kepada=Budi+Santoso\n→ guestName = "Budi Santoso"
+
+  SSRPage -> Registry : getTheme(theme_id)
+  activate Registry
+  Registry --> SSRPage : {\n  component: dynamic(() =>\n    import('EmeraldGarden')),\n  name, colors, price\n}
+  deactivate Registry
+
+  opt event_map_url contains shortened URL
+    SSRPage -> MapUtil : resolveMapUrl(\n  "https://maps.app.goo.gl/xxx")
+    activate MapUtil
+    MapUtil -> MapUtil : HEAD request\n{redirect: 'manual'}
+    MapUtil --> SSRPage : "https://www.google.com/\nmaps/place/..."
+    deactivate MapUtil
+  end
+
+  SSRPage -> SSRPage : Build InvitationData object:\n{\n  id, slug, theme_id,\n  groom_name, bride_name,\n  event_date, event_location,\n  event_map_url (resolved),\n  love_story, gallery_images,\n  bank_accounts, music_url,\n  guest_name: "Budi Santoso",\n  ...\n}
+
+  SSRPage -> SSRPage : generateMetadata():\n{\n  title: "Undangan Pernikahan\n    Budi & Ani",\n  description: "...",\n  openGraph: { images: cover_photo }\n}
+
+  SSRPage --> Theme : Render ThemeComponent\ndengan props:\n{data: InvitationData}
+  deactivate SSRPage
+
+  ' ============================================================
+  '  FLOW: CLIENT-SIDE INTERACTION
+  ' ============================================================
+
+  == Client-Side Interaction ==
+
+  activate Theme
+  Theme --> Guest : Cover Screen:\n"Kepada: Budi Santoso"\n"Undangan Pernikahan\nBudi & Ani"
+
+  Guest -> Theme : Klik "Buka Undangan"
+  Theme -> Theme : setState(opened: true)
+
+  Theme -> Theme : fetch(\n  '/api/rsvp?invitation_id=:id'\n)
+  note right: Fetch existing wishes\n(lihat sequence RSVP)
+  Theme -> Theme : setState(wishes: [...])
+
+  Theme --> Guest : Render semua section:\n1. Data Mempelai & Keluarga\n2. Informasi Acara
+
+  opt event_map_url tersedia
+    Theme -> MapEmbed : toEmbedMapUrl(\n  event_map_url)
+    activate MapEmbed
+    MapEmbed -> MapEmbed : Parse coordinates/query\nfrom Google Maps URL
+    MapEmbed --> Theme : "https://maps.google.com/\nmaps?q=LAT,LNG&z=17\n&output=embed"
+    deactivate MapEmbed
+    Theme --> Guest : Render Google Maps iframe
+  end
+
+  Theme --> Guest : 3. Countdown Timer (live)\n4. Love Story Timeline\n5. Galeri Foto\n6. Form RSVP\n7. Daftar Ucapan Tamu\n8. Rekening Hadiah\n9. Google Maps Embed\n10. Footer "Powered by Eventora"
+
+  deactivate Theme
+end
+
+@enduml
