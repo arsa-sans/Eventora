@@ -1,9 +1,4 @@
 @startuml Eventora_Use_Case_Diagram
-' ============================================================
-'  EVENTORA — Use Case Diagram
-'  Platform SaaS Undangan Digital
-' ============================================================
-
 skinparam usecase {
   BackgroundColor #ECFDF5
   BorderColor #059669

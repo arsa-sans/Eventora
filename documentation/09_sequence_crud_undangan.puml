@@ -1,9 +1,4 @@
 @startuml Eventora_Sequence_CRUD_Undangan
-' ============================================================
-'  EVENTORA — Sequence Diagram: CRUD Undangan
-'  Komponen: Browser, Pages, API Route, Supabase, Storage, DB
-' ============================================================
-
 skinparam sequence {
   ArrowColor #047857
   ActorBorderColor #059669

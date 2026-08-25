@@ -1,9 +1,4 @@
 @startuml Eventora_Sequence_Login
-' ============================================================
-'  EVENTORA — Sequence Diagram: Login User
-'  Komponen: Browser, Page, Middleware, Supabase Client, Auth, DB
-' ============================================================
-
 skinparam sequence {
   ArrowColor #047857
   ActorBorderColor #059669

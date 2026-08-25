@@ -1,9 +1,4 @@
 @startuml Eventora_Sequence_RSVP
-' ============================================================
-'  EVENTORA — Sequence Diagram: Mengirim & Melihat RSVP
-'  Komponen: Browser, Theme Component, API Route, DB
-' ============================================================
-
 skinparam sequence {
   ArrowColor #047857
   ActorBorderColor #059669

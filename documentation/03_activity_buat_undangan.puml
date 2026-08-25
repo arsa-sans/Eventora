@@ -1,9 +1,4 @@
 @startuml Eventora_Activity_Buat_Undangan
-' ============================================================
-'  EVENTORA — Activity Diagram: Membuat Undangan Baru
-'  Swimlane: User | System
-' ============================================================
-
 skinparam activity {
   BackgroundColor #ECFDF5
   BorderColor #059669

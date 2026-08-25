@@ -1,9 +1,4 @@
 @startuml Eventora_ERD
-' ============================================================
-'  EVENTORA — Entity Relationship Diagram (ERD)
-'  Database: PostgreSQL (Supabase)
-' ============================================================
-
 skinparam entity {
   BackgroundColor #ECFDF5
   BorderColor #059669

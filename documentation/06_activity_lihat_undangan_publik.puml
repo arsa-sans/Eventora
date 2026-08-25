@@ -1,9 +1,4 @@
 @startuml Eventora_Activity_Lihat_Undangan_Publik
-' ============================================================
-'  EVENTORA — Activity Diagram: Melihat Undangan Publik
-'  Swimlane: Tamu Undangan | Sistem Eventora
-' ============================================================
-
 skinparam activity {
   BackgroundColor #ECFDF5
   BorderColor #059669

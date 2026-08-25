@@ -1,9 +1,4 @@
 @startuml Eventora_Sequence_Lihat_Undangan
-' ============================================================
-'  EVENTORA — Sequence Diagram: Melihat Undangan Publik
-'  Komponen: Browser, SSR Page, Theme Component, API, DB
-' ============================================================
-
 skinparam sequence {
   ArrowColor #047857
   ActorBorderColor #059669

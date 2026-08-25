@@ -1,9 +1,4 @@
 @startuml Eventora_Activity_Aktivasi_Pembayaran
-' ============================================================
-'  EVENTORA — Activity Diagram: Aktivasi Undangan (Pembayaran)
-'  Swimlane: User | Sistem Eventora | Mayar Payment Gateway
-' ============================================================
-
 skinparam activity {
   BackgroundColor #ECFDF5
   BorderColor #059669

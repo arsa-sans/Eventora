@@ -1,9 +1,4 @@
 @startuml Eventora_Sequence_Upload_Foto
-' ============================================================
-'  EVENTORA — Sequence Diagram: Upload Foto Galeri/Prewedding
-'  Komponen: Browser, Page, API Route, Supabase Auth, Storage
-' ============================================================
-
 skinparam sequence {
   ArrowColor #047857
   ActorBorderColor #059669

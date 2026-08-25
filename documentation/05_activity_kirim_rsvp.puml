@@ -1,9 +1,4 @@
 @startuml Eventora_Activity_Kirim_RSVP
-' ============================================================
-'  EVENTORA — Activity Diagram: Mengirim RSVP & Ucapan
-'  Swimlane: Tamu Undangan | Sistem Eventora
-' ============================================================
-
 skinparam activity {
   BackgroundColor #ECFDF5
   BorderColor #059669

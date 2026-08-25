@@ -1,9 +1,4 @@
 @startuml Eventora_Sequence_Aktivasi_Pembayaran
-' ============================================================
-'  EVENTORA — Sequence Diagram: Aktivasi Undangan via Pembayaran
-'  Komponen: Browser, Dashboard, API Routes, Mayar, Supabase, DB
-' ============================================================
-
 skinparam sequence {
   ArrowColor #047857
   ActorBorderColor #059669

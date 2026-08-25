@@ -1,9 +1,4 @@
 @startuml Eventora_Sequence_Registrasi
-' ============================================================
-'  EVENTORA — Sequence Diagram: Registrasi User
-'  Komponen: Browser, Page, Supabase Client, Auth Server, Database
-' ============================================================
-
 skinparam sequence {
   ArrowColor #047857
   ActorBorderColor #059669
