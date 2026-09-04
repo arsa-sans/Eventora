@@ -39,29 +39,6 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 Dokumentasi lengkap perancangan sistem dan arsitektur aplikasi **Eventora** (Platform SaaS Undangan Digital) menggunakan standar UML (*Unified Modeling Language*) dan format **PlantUML (`.puml`)**. Seluruh diagram dirancang berbasis struktur riil codebase Next.js, API routes, database PostgreSQL (Supabase), dan payment gateway Mayar.id.
 
----
-
-## 📁 Daftar File Diagram
-
-| No | Tipe Diagram | File | Deskripsi |
-|---|---|---|---|
-| **01** | **Use Case Diagram** | [`01_usecase_diagram.puml`](./01_usecase_diagram.puml) | Memetakan 4 aktor (*Pengunjung*, *Pengguna Terdaftar*, *Tamu Undangan*, *Mayar Gateway*) dan 27 use case terkelompok ke 6 paket fungsional beserta relasi `<<include>>` dan `<<extend>>`. |
-| **02** | **Activity Diagram** | [`02_activity_registrasi_login.puml`](./02_activity_registrasi_login.puml) | Alur registrasi (Email/Password & Google OAuth) dan login dengan partisi swimlane **User** vs **Sistem**. |
-| **03** | **Activity Diagram** | [`03_activity_buat_undangan.puml`](./03_activity_buat_undangan.puml) | Alur wizard pembuatan undangan (5 langkah) dengan swimlane **User** vs **Sistem**, termasuk upload foto. |
-| **04** | **Activity Diagram** | [`04_activity_aktivasi_pembayaran.puml`](./04_activity_aktivasi_pembayaran.puml) | Alur aktivasi undangan berbayar melalui 3 swimlane (**User**, **Sistem Eventora**, **Mayar Payment Gateway**). |
-| **05** | **Activity Diagram** | [`05_activity_kirim_rsvp.puml`](./05_activity_kirim_rsvp.puml) | Alur pengiriman konfirmasi kehadiran (RSVP) & ucapan oleh tamu dengan swimlane **Tamu Undangan** vs **Sistem**. |
-| **06** | **Activity Diagram** | [`06_activity_lihat_undangan_publik.puml`](./06_activity_lihat_undangan_publik.puml) | Alur akses publik undangan `/[slug]` (SSR, pengecekan status draft/active, personalisasi nama tamu, interaksi kalender & maps). |
-| **07** | **Sequence Diagram** | [`07_sequence_registrasi.puml`](./07_sequence_registrasi.puml) | Urutan pesan dan pemanggilan fungsi/API saat registrasi akun baru (Email Verification & Google OAuth + trigger `handle_new_user`). |
-| **08** | **Sequence Diagram** | [`08_sequence_login.puml`](./08_sequence_login.puml) | Urutan autentikasi login (Email/Password dan Google OAuth via Supabase Auth). |
-| **09** | **Sequence Diagram** | [`09_sequence_crud_undangan.puml`](./09_sequence_crud_undangan.puml) | Interaksi lengkap controller, API route `/api/invitations`, `/api/upload`, Supabase Server Client, hingga database untuk operasi Create, Read, Update, Delete. |
-| **10** | **Sequence Diagram** | [`10_sequence_aktivasi_pembayaran.puml`](./10_sequence_aktivasi_pembayaran.puml) | 4 fase pembayaran: Pembuatan invoice `/api/checkout`, pemrosesan di Mayar, penanganan webhook `/api/webhook/mayar` dengan validasi HMAC SHA-256, dan aktivasi database. |
-| **11** | **Sequence Diagram** | [`11_sequence_rsvp.puml`](./11_sequence_rsvp.puml) | Siklus pengiriman RSVP tamu, validasi status undangan aktif, penyisipan database via Service Role, dan penarikan statistik di dashboard pemilik. |
-| **12** | **Sequence Diagram** | [`12_sequence_lihat_undangan.puml`](./12_sequence_lihat_undangan.puml) | Alur SSR dynamic route `/[slug]`, resolusi tema dari `themeRegistry`, resolver URL Google Maps, pencegahan akses status draft (`DraftBlockedPage`), dan interaksi komponen client. |
-| **13** | **Sequence Diagram** | [`13_sequence_upload_foto.puml`](./13_sequence_upload_foto.puml) | Validasi otentikasi user, pengecekan tipe MIME (JPEG/PNG/WebP/GIF) & batas 5MB, penyimpanan ke Supabase Storage bucket `invitation-images`, dan generasi public URL. |
-| **14** | **Entity Relationship Diagram** | [`14_erd.puml`](./14_erd.puml) | Struktur entitas database PostgreSQL Supabase (`auth.users`, `profiles`, `themes`, `invitations`, `rsvps`, `transactions`, `storage.objects`), atribut, tipe data, PK, FK, cardinalities, dan RLS notes. |
-
----
-
 ## 🎨 Panduan Import ke Draw.io
 
 File `.puml` yang telah dibuat dapat langsung di-render ke dalam **Draw.io** / **diagrams.net** dengan langkah-langkah berikut:
