@@ -61,22 +61,6 @@ File `.puml` yang telah dibuat dapat langsung di-render ke dalam **Draw.io** / *
 2. Buka file `.puml` apa saja di folder `documentation/`.
 3. Tekan `Alt + D` (Windows) / `Option + D` (Mac) untuk melihat preview diagram secara live.
 
----
-
-## 🏗️ Ringkasan Entitas Database (ERD)
-
-```mermaid
-erDiagram
-    auth_users ||--|| profiles : "id (trigger)"
-    profiles ||--o{ invitations : "user_id"
-    profiles ||--o{ transactions : "user_id"
-    themes ||--o{ invitations : "theme_id"
-    invitations ||--o{ rsvps : "invitation_id"
-    invitations ||--o{ transactions : "invitation_id"
-```
-
----
-
 ## 🛡️ Aturan Keamanan & Akses (RLS & Gatekeeping)
 - **Undangan Draft vs Aktif**: Undangan yang belum dibayar berstatus `draft` dan diblokir dari akses publik melalui komponen SSR `DraftBlockedPage` dan verifikasi backend di `/api/rsvp`.
 - **Row-Level Security (RLS)**: Diaktifkan pada semua tabel (`profiles`, `invitations`, `rsvps`, `transactions`).
