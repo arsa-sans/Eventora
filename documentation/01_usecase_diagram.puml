@@ -29,7 +29,6 @@ actor "Pengguna\nTerdaftar" as User
 actor "Tamu\nUndangan" as Guest
 actor "Mayar\nPayment Gateway" as Mayar <<External System>>
 
-' Generalisasi: Pengguna Terdaftar adalah Pengunjung yang sudah login
 Visitor <|-- User
 
 ' ============================================================
