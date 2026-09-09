@@ -11,9 +11,9 @@ export interface BankAccount {
 }
 
 export interface EventDetail {
-  name: string;        // e.g. "Akad Nikah" / "Resepsi"
-  date: string;        // ISO date string
-  time: string;        // e.g. "08:00 WIB"
+  name: string;
+  date: string;
+  time: string;        
   location: string;
   map_url?: string;
 }
