@@ -482,21 +482,3 @@ export const metadata: Metadata = {
 3. **Keyboard navigation**: Tab order harus logical
 4. **ARIA labels**: Tombol icon-only harus punya `aria-label`
 5. **Form labels**: Setiap input HARUS punya `<label>` yang ter-associate
-
----
-
-## 12. Git Workflow
-
-```bash
-# Branch naming
-feature/landing-hero
-feature/theme-emerald-garden
-fix/pricing-responsive
-refactor/color-system
-
-# Commit message format (Bahasa Inggris)
-feat: add testimonials carousel section
-fix: pricing card overflow on mobile
-style: update hero gradient colors
-refactor: extract theme base component
-```
