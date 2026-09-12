@@ -434,25 +434,3 @@ async function handleSubmit(e: React.FormEvent) {
   }
 }
 ```
-
----
-
-## 9. SEO Rules
-
-```tsx
-// ✅ Setiap page HARUS export metadata
-export const metadata: Metadata = {
-  title: "Judul Halaman | Eventora",
-  description: "Deskripsi 150-160 karakter dalam Bahasa Indonesia",
-  openGraph: {
-    title: "...",
-    description: "...",
-    type: "website",
-  },
-};
-```
-
-- Setiap halaman: 1x `<h1>`, heading hierarchy berurutan
-- Semua image: wajib `alt` text deskriptif
-- Link internal: gunakan `next/link`
-- Semantic HTML: `<section>`, `<nav>`, `<main>`, `<footer>`, `<article>`
