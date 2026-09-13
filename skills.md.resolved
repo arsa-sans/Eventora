@@ -399,38 +399,3 @@ const { error } = await supabase.from("rsvps").insert({
   pax: numberOfGuests,
 });
 ```
-
----
-
-## 8. Error Handling
-
-```tsx
-// ✅ Pattern untuk data fetching
-try {
-  const { data, error } = await supabase.from("table").select("*");
-  if (error) throw error;
-  return data;
-} catch (err) {
-  console.error("Failed to fetch:", err);
-  return null; // atau tampilkan error UI
-}
-
-// ✅ Pattern untuk form submission
-const [isLoading, setIsLoading] = useState(false);
-const [error, setError] = useState<string | null>(null);
-const [success, setSuccess] = useState(false);
-
-async function handleSubmit(e: React.FormEvent) {
-  e.preventDefault();
-  setIsLoading(true);
-  setError(null);
-  try {
-    // ... submit
-    setSuccess(true);
-  } catch (err) {
-    setError("Gagal mengirim. Silakan coba lagi.");
-  } finally {
-    setIsLoading(false);
-  }
-}
-```
