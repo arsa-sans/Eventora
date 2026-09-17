@@ -279,24 +279,3 @@ export const themeRegistry: Record<string, {
 };
 ```
 
-### Langkah 4: Update `[slug]/page.tsx`
-```tsx
-import { themeRegistry } from "@/lib/themeRegistry";
-
-export default async function InvitationPage({ params }) {
-  const { slug } = await params;
-  const invitation = await fetchInvitation(slug); // dari Supabase
-  const theme = themeRegistry[invitation.theme_id];
-  if (!theme) return <div>Theme not found</div>;
-  const ThemeComponent = theme.component;
-  return <ThemeComponent data={invitation} />;
-}
-```
-
-### Rules untuk Theme Component:
-1. **Warna HARUS di-hardcode** dalam theme (bukan pakai token global) — setiap tema punya palet sendiri
-2. **Mobile-first** — undangan 95% dibuka di HP, pastikan tampilan di 375px sempurna
-3. **Selalu gunakan `motion`** untuk reveal animations di setiap section
-4. **Font** — load via `next/font/google` di theme itu sendiri atau di layout
-5. **Cover** harus fullscreen (`min-h-screen`) dengan tombol "Buka Undangan"
-6. **RSVP Form** harus functional — submit ke API `/api/rsvp`
