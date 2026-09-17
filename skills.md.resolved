@@ -257,25 +257,3 @@ export function NamaTheme({ data }: ThemeProps) {
   );
 }
 ```
-
-### Langkah 3: Daftarkan di theme registry
-```tsx
-// src/lib/themeRegistry.ts
-import dynamic from "next/dynamic";
-
-export const themeRegistry: Record<string, {
-  name: string;
-  component: React.ComponentType<any>;
-  category: string;
-  colors: { primary: string; bg: string };
-}> = {
-  "emerald-garden": {
-    name: "Emerald Garden",
-    component: dynamic(() => import("@/components/themes/EmeraldGarden").then(m => m.EmeraldGarden)),
-    category: "wedding",
-    colors: { primary: "#059669", bg: "#F0FDF4" },
-  },
-  // ... tambahkan tema baru di sini
-};
-```
-
