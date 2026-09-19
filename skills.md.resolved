@@ -77,35 +77,3 @@ export const features = [
 
 // src/components/landing/Features.tsx
 import { features } from "@/data/features";
-```
-
----
-
-## 3. Styling Conventions (Tailwind CSS v4)
-
-### Theme Token Usage
-```tsx
-// ✅ Gunakan token dari design system
-className="bg-background text-foreground border-border"
-className="bg-primary text-white hover:bg-primary-dark"
-className="text-muted"
-
-// ❌ JANGAN hardcode warna
-className="bg-[#059669]"  // ← Hindari, kecuali di dalam theme component
-```
-
-### Responsive Pattern
-```tsx
-// ✅ Mobile-first ordering
-className="text-2xl md:text-4xl lg:text-5xl"
-className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-className="px-4 md:px-6 lg:px-8"
-```
-
-### Spacing Pattern
-```tsx
-// ✅ Section spacing konsisten
-// Setiap section landing page:
-className="py-16 md:py-24"  // vertical padding
-// Container di dalam section:
-className="container mx-auto px-4 md:px-6"
