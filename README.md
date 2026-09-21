@@ -60,8 +60,3 @@ File `.puml` yang telah dibuat dapat langsung di-render ke dalam **Draw.io** / *
 1. Pasang ekstensi **PlantUML** (`jebbs.plantuml`) di VS Code / Cursor / Windsurf.
 2. Buka file `.puml` apa saja di folder `documentation/`.
 3. Tekan `Alt + D` (Windows) / `Option + D` (Mac) untuk melihat preview diagram secara live.
-
-## 🛡️ Aturan Keamanan & Akses (RLS & Gatekeeping)
-- **Undangan Draft vs Aktif**: Undangan yang belum dibayar berstatus `draft` dan diblokir dari akses publik melalui komponen SSR `DraftBlockedPage` dan verifikasi backend di `/api/rsvp`.
-- **Row-Level Security (RLS)**: Diaktifkan pada semua tabel (`profiles`, `invitations`, `rsvps`, `transactions`).
-- **Webhook Security**: Webhook Mayar divalidasi menggunakan HMAC SHA-256 signature verification via `crypto.timingSafeEqual` sebelum mengeksekusi aktivasi otomatis.
