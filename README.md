@@ -42,21 +42,3 @@ Dokumentasi lengkap perancangan sistem dan arsitektur aplikasi **Eventora** (Pla
 ## 🎨 Panduan Import ke Draw.io
 
 File `.puml` yang telah dibuat dapat langsung di-render ke dalam **Draw.io** / **diagrams.net** dengan langkah-langkah berikut:
-
-### Metode 1: Menggunakan Menu Insert Draw.io (Rekomendasi)
-1. Buka [app.diagrams.net](https://app.diagrams.net/) (atau aplikasi desktop Draw.io).
-2. Buat diagram baru (*Blank Diagram*).
-3. Di menu bar atas, klik **Arrange** (atau ikon **+** di toolbar) $\rightarrow$ **Insert** $\rightarrow$ **Advanced** $\rightarrow$ **PlantUML...**.
-4. Buka salah satu file `.puml` di folder `documentation/`, salin seluruh isinya, lalu *paste* ke dalam kotak dialog yang muncul.
-5. Klik **Insert**. Draw.io akan mengonversi script PlantUML menjadi diagram visual interaktif yang dapat Anda atur, ubah warna, atau ekspor ke PNG/SVG/PDF.
-
-### Metode 2: Menggunakan PlantText / PlantUML Server
-1. Buka [PlantText.com](https://www.planttext.com/) atau [PlantUML Online Editor](https://www.plantuml.com/plantuml/uml/).
-2. *Paste* kode dari file `.puml`.
-3. Simpan / ekspor gambar ke format **SVG** atau **PNG**.
-4. *Drag & drop* file gambar tersebut ke dalam lembar kerja Draw.io.
-
-### Metode 3: Ekstensi VS Code (Opsi Developer)
-1. Pasang ekstensi **PlantUML** (`jebbs.plantuml`) di VS Code / Cursor / Windsurf.
-2. Buka file `.puml` apa saja di folder `documentation/`.
-3. Tekan `Alt + D` (Windows) / `Option + D` (Mac) untuk melihat preview diagram secara live.
