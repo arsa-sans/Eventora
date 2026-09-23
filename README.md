@@ -34,11 +34,3 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-# Eventora — Dokumentasi Perancangan Sistem UML
-
-Dokumentasi lengkap perancangan sistem dan arsitektur aplikasi **Eventora** (Platform SaaS Undangan Digital) menggunakan standar UML (*Unified Modeling Language*) dan format **PlantUML (`.puml`)**. Seluruh diagram dirancang berbasis struktur riil codebase Next.js, API routes, database PostgreSQL (Supabase), dan payment gateway Mayar.id.
-
-## 🎨 Panduan Import ke Draw.io
-
-File `.puml` yang telah dibuat dapat langsung di-render ke dalam **Draw.io** / **diagrams.net** dengan langkah-langkah berikut:
